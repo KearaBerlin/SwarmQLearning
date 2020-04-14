@@ -1,4 +1,185 @@
+globals [number-of-robots goal-found]
+turtles-own [should-not-move ;;if this value is 1, the turtle will not move forward
+;;the following lists hold action weights
+;;for different scenarios the turtles can encounter
+;;the first letter denotes how many obstacles there are:
+;;s = single, d = double, t = triple
+;;the middle letter(s) denote where they are:
+;;f = forward, l = left, r = right
+;;the last letter denotes whether the exploration value is high or low:
+;;h = high (3+), l = low (2 or less)
+h-list sfh-list slh-list srh-list dflh-list dfrh-list dlrh-list th-list ;;low e-value
+l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high e-value
 
+;;this will reset the model and set up the robots
+to setup
+  set number-of-robots 5
+  clear-all
+  create-turtles 5 ;;right now, number-of-robots doesn't work for this
+  reset-ticks
+end
+
+to go ;;basic stand-in for go procedure
+  ask turtles [choose-action-no-stimulus]
+  ask turtles [move]
+  ask turtles [mark-as-explored]
+  ask turtles [show exploration-value]
+  tick
+end
+
+;;this will detail how a robot chooses one of six weighted values in a scenario
+;;UNFINISHED
+to choose-action [object] ;;right now, actions are completely randomized
+  let action-number (random 6)
+  (ifelse
+    action-number = 0 [
+      turn-towards object
+    ]
+    action-number = 1 [
+      turn-from object
+    ]
+    action-number = 2 [
+      turn-up
+    ]
+    action-number = 3 [
+      turn-down
+    ]
+    action-number = 4 [
+      turn-left
+    ]
+    action-number = 5 [
+      turn-right
+    ])
+end
+
+;;this will detail how an action is chosen when there are no obstacles
+;;UNFINISHED, MAY BE UNNECESSARY
+to choose-action-no-stimulus ;;to be used when nothing is sensed, no signals received
+  let action-number random 4
+  (ifelse
+    action-number = 0 [
+      turn-up
+    ]
+    action-number = 1 [
+      turn-down
+    ]
+    action-number = 2 [
+      turn-left
+    ]
+    action-number = 3 [
+      turn-right
+    ])
+end
+
+;;this will calculate a value for how unexplored the robot's immediate area is
+to-report exploration-value ;;0 = low, 2 = high
+  let value 0
+  if [pcolor] of patch-ahead 1 != green [
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 45 1 != green [ ;;patch diagonal up right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
+    set value (value + 1)
+  ]
+  ifelse value > 2
+    [set value 2]
+    [set value 0]
+  report value
+end
+
+;;this will calculate a unique value for each orientation of obstacles around a robot
+to-report obstacle-value
+  let value 0
+  if [pcolor] of patch-ahead 1 = blue [
+    set value (value + 1)
+  ] if [pcolor] of patch-right-and-ahead 90 1 = blue [
+    set value (value + .5)
+  ] if [pcolor] of patch-left-and-ahead 90 1 = blue [
+    set value (value + .25)
+  ]
+  report value
+end
+
+;;this will calculate a final value for the scenario a robot finds itself in
+;;UNFINISHED
+to-report scenario-value ;;should add obstacle-value to exploration-value
+  let value 0
+end
+
+;;below are the six basic actions a robot can take
+to turn-towards [object]
+  face object
+end
+
+to turn-from [object]
+  face object
+  set heading (heading - 180)
+end
+
+to turn-up
+  set heading 90
+end
+
+to turn-down
+  set heading 270
+end
+
+to turn-left
+  set heading 180
+end
+
+to turn-right
+  set heading 0
+end
+
+;;the robots can move after turning in a direction
+;;should-not-move could be toggled depending on whether
+;;there is an obstacle directly in front of the robot
+;;this would keep robots from entering an occupied space
+;;UNFINISHED
+to move ;;should add part that depends on accessing should-not-move
+    fd 1
+end
+
+;;this keeps track of the territory covered by the robots
+to mark-as-explored
+  set pcolor green
+end
+
+;;this will set up a single action weight list
+;;each item in the list will begin with the same value
+;;UNFINISHED
+to fill-list [weight-list]
+end
+
+;;this will add or subtract weight to/from the completed action
+;;depending on its calculated value
+;;UNFINISHED
+to reweigh-values
+end
+
+;;this will calculate the value of an action through the
+;;Q-learning algorithm
+;;UNFINISHED
+to calculate-action-value
+end
+
+;;this will specifically take the scenario-value from
+;;the robot and use it to determine which list the robot
+;;should take actions from and reweigh
+;;this may be unnecessary; this could possibly be done
+;;in the choose-action function
+;;UNFINISHED, MAY BE UNNECESSARY
+to determine-scenario
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -26,6 +207,40 @@ GRAPHICS-WINDOW
 1
 ticks
 30.0
+
+BUTTON
+11
+13
+74
+46
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+12
+58
+75
+91
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
