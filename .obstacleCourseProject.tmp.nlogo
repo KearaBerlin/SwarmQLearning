@@ -14,7 +14,7 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 
 ;;this will reset the model and set up the robots
 to setup
-  set number-of-robots 5
+
   clear-all
   create-turtles 5 [set messages (list) ] ;;right now, number-of-robots doesn't work for this
   reset-ticks
@@ -88,9 +88,9 @@ to broadcast-location
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
-to-report exploration-value ;;0 = low, 2 = high
+to-report exploration-value
   let value 0
-  if [pcolor] of patch-ahead 1 != green [
+  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
     set value (value + 1)
   ]
   if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
@@ -105,9 +105,15 @@ to-report exploration-value ;;0 = low, 2 = high
   if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
     set value (value + 1)
   ]
-  ifelse value > 2
-    [set value 2]
-    [set value 0]
+  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
+    set value (value + 1)
+  ]
   report value
 end
 
@@ -162,7 +168,9 @@ end
 ;;this would keep robots from entering an occupied space
 ;;UNFINISHED
 to move ;;should add part that depends on accessing should-not-move
+  if should-not-move = 0 [
     fd 1
+  ]
 end
 
 ;;this keeps track of the territory covered by the robots
