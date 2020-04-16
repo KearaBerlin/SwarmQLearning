@@ -21,7 +21,7 @@ to setup
   let i 1
   while [ i <= 5 ] [
     create-turtles 1 [set id i]
-    set i i + 1
+
   ]
   ;;create-turtles 5 ;;right now, number-of-robots doesn't work for this
   reset-ticks
