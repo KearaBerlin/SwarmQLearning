@@ -14,9 +14,16 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 
 ;;this will reset the model and set up the robots
 to setup
-
   clear-all
-  create-turtles 5 [set messages (list) ] ;;right now, number-of-robots doesn't work for this
+  create-turtles 5 [set messages (list) ]
+  repeat 50 [
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+
+    ask patch x y [spawn-obstacle]
+  ]
   reset-ticks
 end
 
@@ -203,6 +210,36 @@ end
 ;;in the choose-action function
 ;;UNFINISHED, MAY BE UNNECESSARY
 to determine-scenario
+end
+
+;;this will be used to make sure there is enough space between two obstacles
+
+to spawn-obstacle
+  let obstacle-size random 6
+  set obstacle-size (obstacle-size + 2)
+  let x-difference random 2
+  let y-difference random 2
+  set x-difference (x-difference - 1)
+  set y-difference (y-difference - 1)
+  set pcolor blue
+  repeat obstacle-size [
+    repeat 3 [
+      repeat 3 [
+        if x-difference != 0 or y-difference != 0 [
+          if [pcolor] of patch (pxcor + (x-difference * 2)) (pycor + (y-difference * 2)) != blue
+          and [pcolor] of patch (pxcor + x-difference) (pycor + y-difference) != blue [
+            ask patch (pxcor + x-difference) (pycor + y-difference) [set pcolor blue]
+            ifelse x-difference = 1
+              [set x-difference -1]
+              [set x-difference (x-difference + 1)]
+          ]
+          ifelse y-difference = 1
+            [set y-difference -1]
+            [set y-difference (y-difference + 1)]
+        ]
+      ]
+    ]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
