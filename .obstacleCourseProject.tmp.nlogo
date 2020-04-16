@@ -1,7 +1,6 @@
 globals [number-of-robots goal-found]
 turtles-own [should-not-move ;;if this value is 1, the turtle will not move forward
   messages ;; a list of the messages the robot recieved for this tick
-  id       ;; the turtle's unique ID
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
 ;;the first letter denotes how many obstacles there are:
@@ -17,13 +16,7 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 to setup
   set number-of-robots 5
   clear-all
-  ;; generate turtles each with a unique ID
-  let i 1
-  while [ i <= 5 ] [
-    create-turtles 1 [set id i]
-
-  ]
-  ;;create-turtles 5 ;;right now, number-of-robots doesn't work for this
+  create-turtles 5 [set messages (list) ] ;;right now, number-of-robots doesn't work for this
   reset-ticks
 end
 
@@ -81,12 +74,17 @@ to choose-action-no-stimulus ;;to be used when nothing is sensed, no signals rec
 end
 
 to broadcast-messages
-  ;; broadcast this robot's location as [x, y, id]
-  broadcast xcor ycor
+  ;; broadcast this robot's location as [x, y, id] where id is who number
+  broadcast-location
 end
 
-to broadcast [x y]
-  print ( word id ": " x ", " y )
+to broadcast-location
+  let message (list xcor ycor who)
+
+  ask turtles in-radius 5 [
+    set messages lput message messages  ;; appends the new message to the nearby turtle's list
+  ]
+  ;print ( word who ": " x ", " y )
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
