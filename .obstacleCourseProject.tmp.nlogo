@@ -16,13 +16,14 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 to setup
   clear-all
   create-turtles 5 [set messages (list) ]
-  repeat 50 [
+  repeat 100 [ ;;will generate obstacles quasi-randomly
     let x random 32
     let y random 32
     set x (x - 16)
     set y (y - 16)
-
-    ask patch x y [spawn-obstacle]
+    if x < -2 or y < -2 or x > 2 or y > 2 [
+      ask patch x y [spawn-obstacle]
+    ]
   ]
   reset-ticks
 end
@@ -212,20 +213,23 @@ end
 to determine-scenario
 end
 
-;;this will be used to make sure there is enough space between two obstacles
-
+;;this will generate blue squares at a point on the map
+;;each blue patch will be treated like a wall, so they will act as obstacles
+;;the generator tries to make sure that the areas around it are clear so that
+;;the robots will always have a path to traverse
 to spawn-obstacle
-  let obstacle-size random 6
-  set obstacle-size (obstacle-size + 2)
-  let x-difference random 2
-  let y-difference random 2
-  set x-difference (x-difference - 1)
+  let obstacle-size random 6 ;;how many squares around the center point will be turned blue
+  set obstacle-size (obstacle-size + 2) ;;minimum of 2, maximum of 7
+  let x-difference random 2 ;;these will help the patch look around it at other squares
+  let y-difference random 2 ;;they're random so the patches are generated in random directions
+  set x-difference (x-difference - 1) ;;minimum of -1, maximum of 1
   set y-difference (y-difference - 1)
-  set pcolor blue
+  set pcolor blue ;;the center patch will make itself blue
   repeat obstacle-size [
     repeat 3 [
       repeat 3 [
-        if x-difference != 0 or y-difference != 0 [
+        if x-difference != 0 or y-difference != 0 [ ;;making sure its not checking itself
+
           if [pcolor] of patch (pxcor + (x-difference * 2)) (pycor + (y-difference * 2)) != blue
           and [pcolor] of patch (pxcor + x-difference) (pycor + y-difference) != blue [
             ask patch (pxcor + x-difference) (pycor + y-difference) [set pcolor blue]
