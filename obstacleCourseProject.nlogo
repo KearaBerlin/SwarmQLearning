@@ -1,6 +1,5 @@
-globals [number-of-robots goal-found]
-turtles-own [should-not-move ;;if this value is 1, the turtle will not move forward
-  messages ;; a list of the messages the robot recieved for this tick
+globals [number-of-robots goal-found goal-exists goal]
+turtles-own [messages ;; a list of the messages the robot recieved for this tick
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
 ;;the first letter denotes how many obstacles there are:
@@ -24,6 +23,9 @@ to setup
     if x < -2 or y < -2 or x > 2 or y > 2 [
       ask patch x y [spawn-obstacle]
     ]
+  ]
+  while [goal-exists = 0] [
+    create-goal
   ]
   reset-ticks
 end
@@ -171,13 +173,18 @@ to turn-right
 end
 
 ;;the robots can move after turning in a direction
-;;should-not-move could be toggled depending on whether
-;;there is an obstacle directly in front of the robot
-;;this would keep robots from entering an occupied space
-;;UNFINISHED
-to move ;;should add part that depends on accessing should-not-move
-  if should-not-move = 0 [
+;;they will not move forward if there is an obstacle in front of them
+;;this may later make use of a boolean value
+;;the robots will disappear if they enter the goal
+to move
+  if [pcolor] of patch-ahead 1 != blue [
     fd 1
+  ]
+  if pcolor = yellow [
+    if goal-found = 0 [
+      set goal-found 1
+    ]
+    die
   ]
 end
 
@@ -245,6 +252,21 @@ to spawn-obstacle
         ]
       ]
     ]
+  ]
+end
+
+;;this will turn a patch yellow if it isn't an obstacle patch
+;;further work will need to be done to minimize the chance of
+;;the goal spawning in a blank space in the center of an obstacle
+to create-goal
+  let x random 32
+  let y random 32
+  set x (x - 16)
+  set y (y - 16)
+  if [pcolor] of patch x y != blue [
+    ask patch x y [set pcolor yellow]
+    set goal-exists 1 ;telling the game the goal was successfully spawned
+    set goal patch x y
   ]
 end
 @#$#@#$#@
