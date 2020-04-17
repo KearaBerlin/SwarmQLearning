@@ -1,5 +1,5 @@
 globals [number-of-robots goal-found]
-turtles-own [should-not-move ;;if this value is 1, the turtle will not move forward
+turtles-own [
   messages ;; a list of the messages the robot recieved for this tick
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
@@ -229,10 +229,12 @@ to spawn-obstacle
     repeat 3 [
       repeat 3 [
         if x-difference != 0 or y-difference != 0 [ ;;making sure its not checking itself
-
+          ;;the following if-statement checks if the area around a certain patch is clear
           if [pcolor] of patch (pxcor + (x-difference * 2)) (pycor + (y-difference * 2)) != blue
           and [pcolor] of patch (pxcor + x-difference) (pycor + y-difference) != blue [
+            ;;if the area is clear, turn the patch blue
             ask patch (pxcor + x-difference) (pycor + y-difference) [set pcolor blue]
+            ;;change the coordinates to refer to a different patch
             ifelse x-difference = 1
               [set x-difference -1]
               [set x-difference (x-difference + 1)]

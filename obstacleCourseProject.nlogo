@@ -14,9 +14,17 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 
 ;;this will reset the model and set up the robots
 to setup
-  set number-of-robots 5
   clear-all
-  create-turtles 5 [set messages (list) ] ;;right now, number-of-robots doesn't work for this
+  create-turtles 5 [set messages (list) ]
+  repeat 100 [ ;;will generate obstacles quasi-randomly
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+    if x < -2 or y < -2 or x > 2 or y > 2 [
+      ask patch x y [spawn-obstacle]
+    ]
+  ]
   reset-ticks
 end
 
@@ -88,9 +96,9 @@ to broadcast-location
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
-to-report exploration-value ;;0 = low, 2 = high
+to-report exploration-value
   let value 0
-  if [pcolor] of patch-ahead 1 != green [
+  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
     set value (value + 1)
   ]
   if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
@@ -105,9 +113,15 @@ to-report exploration-value ;;0 = low, 2 = high
   if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
     set value (value + 1)
   ]
-  ifelse value > 2
-    [set value 2]
-    [set value 0]
+  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
+    set value (value + 1)
+  ]
   report value
 end
 
@@ -162,7 +176,9 @@ end
 ;;this would keep robots from entering an occupied space
 ;;UNFINISHED
 to move ;;should add part that depends on accessing should-not-move
+  if should-not-move = 0 [
     fd 1
+  ]
 end
 
 ;;this keeps track of the territory covered by the robots
@@ -195,6 +211,41 @@ end
 ;;in the choose-action function
 ;;UNFINISHED, MAY BE UNNECESSARY
 to determine-scenario
+end
+
+;;this will generate blue squares at a point on the map
+;;each blue patch will be treated like a wall, so they will act as obstacles
+;;the generator tries to make sure that the areas around it are clear so that
+;;the robots will always have a path to traverse
+to spawn-obstacle
+  let obstacle-size random 6 ;;how many squares around the center point will be turned blue
+  set obstacle-size (obstacle-size + 2) ;;minimum of 2, maximum of 7
+  let x-difference random 2 ;;these will help the patch look around it at other squares
+  let y-difference random 2 ;;they're random so the patches are generated in random directions
+  set x-difference (x-difference - 1) ;;minimum of -1, maximum of 1
+  set y-difference (y-difference - 1)
+  set pcolor blue ;;the center patch will make itself blue
+  repeat obstacle-size [
+    repeat 3 [
+      repeat 3 [
+        if x-difference != 0 or y-difference != 0 [ ;;making sure its not checking itself
+          ;;the following if-statement checks if the area around a certain patch is clear
+          if [pcolor] of patch (pxcor + (x-difference * 2)) (pycor + (y-difference * 2)) != blue
+          and [pcolor] of patch (pxcor + x-difference) (pycor + y-difference) != blue [
+            ;;if the area is clear, turn the patch blue
+            ask patch (pxcor + x-difference) (pycor + y-difference) [set pcolor blue]
+            ;;change the coordinates to refer to a different patch
+            ifelse x-difference = 1
+              [set x-difference -1]
+              [set x-difference (x-difference + 1)]
+          ]
+          ifelse y-difference = 1
+            [set y-difference -1]
+            [set y-difference (y-difference + 1)]
+        ]
+      ]
+    ]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
