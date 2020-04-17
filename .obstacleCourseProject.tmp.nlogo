@@ -1,6 +1,5 @@
-globals [number-of-robots goal-found]
-turtles-own [
-  messages ;; a list of the messages the robot recieved for this tick
+globals [number-of-robots goal-found goal-exists goal-x goal-y]
+turtles-own [messages ;; a list of the messages the robot recieved for this tick
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
 ;;the first letter denotes how many obstacles there are:
@@ -24,6 +23,9 @@ to setup
     if x < -2 or y < -2 or x > 2 or y > 2 [
       ask patch x y [spawn-obstacle]
     ]
+  ]
+  while [goal-exists = 0] [
+    create-goal
   ]
   reset-ticks
 end
@@ -176,7 +178,7 @@ end
 ;;this would keep robots from entering an occupied space
 ;;UNFINISHED
 to move ;;should add part that depends on accessing should-not-move
-  if should-not-move = 0 [
+  if [pcolor] of patch-ahead 1 != blue [
     fd 1
   ]
 end
@@ -245,6 +247,19 @@ to spawn-obstacle
         ]
       ]
     ]
+  ]
+end
+
+to create-goal
+  let x random 32
+  let y random 32
+  set x (x - 16)
+  set y (y - 16)
+  if [pcolor] of patch x y != blue [
+    ask patch x y [set pcolor yellow]
+    set goal-exists 1
+    set goal-x x
+    set goal-
   ]
 end
 @#$#@#$#@
