@@ -1,4 +1,4 @@
-globals [number-of-robots goal-found goal-exists goal
+globals [number-of-robots goal-found goal
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
 ;;the following lists hold action weights
@@ -26,22 +26,24 @@ to start-round
   clear-turtles
   clear-patches
   clear-drawing
-  set goal-exists 0
   set goal-found 0
 
   create-turtles 5 [set messages (list) ]
-  repeat 100 [ ;;will generate obstacles quasi-randomly
-    let x random 32
-    let y random 32
-    set x (x - 16)
-    set y (y - 16)
-    if x < -2 or y < -2 or x > 2 or y > 2 [
-      ask patch x y [spawn-obstacle]
-    ]
-  ]
+
+  create-obstacles
+
+  let goal-exists 0
   while [goal-exists = 0] [
-    create-goal
+    set goal-exists create-goal ;; create-goal reports 1 for success, 0 for failure
   ]
+
+  ;; check with DFS that a path to goal exists
+  let obstacles-exist 0
+  while [obstacles-exist = 0] [
+    create-obstacles
+    set obstacles-exist dfs ;; reports 0 (failure) or 1 (success)
+  ]
+
   reset-ticks
 end
 
@@ -53,6 +55,18 @@ to go ;;basic stand-in for go procedure
   ask turtles [mark-as-explored]
   ;ask turtles [show exploration-value]
   tick
+end
+
+to create-obstacles
+  repeat 100 [ ;;will generate obstacles quasi-randomly
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+    if x < -2 or y < -2 or x > 2 or y > 2 [
+      ask patch x y [spawn-obstacle]
+    ]
+  ]
 end
 
 to check-completion
@@ -283,16 +297,52 @@ end
 ;;this will turn a patch yellow if it isn't an obstacle patch
 ;;further work will need to be done to minimize the chance of
 ;;the goal spawning in a blank space in the center of an obstacle
-to create-goal
+to-report create-goal
   let x random 32
   let y random 32
   set x (x - 16)
   set y (y - 16)
   if [pcolor] of patch x y != blue [
     ask patch x y [set pcolor yellow]
-    set goal-exists 1 ;telling the game the goal was successfully spawned
     set goal patch x y
+    report 1
   ]
+  report 0
+end
+
+to-report dfs
+  ; G is the graph, s is the starting node, g is the goal node
+  let visited (list)
+  let stack (list)   ; to be used as a stack
+  ; Add g to visited
+  set visited lput goal visited
+  set stack lput goal stack
+
+  while [not empty? stack] [
+    ; pop the last element
+    let len length stack
+    let current last stack
+    set stack remove-item (len - 1) stack
+
+    if current = patch 0 0 [ report 1 ]
+
+    ; generate neighbors of current, as an agentset
+    let neighbor-set turtles ;; this is just a bogus value to initialize the agentset
+    ask current [ set neighbor-set neighbors4 ] ;; 4 neighbors of current patch
+    show current
+    show neighbor-set
+
+    ask neighbor-set [ ;; ask each neighbor patch to do the following:
+      ;; here, self refers to the element of neighbor-set we are currently processing
+      if not member? self visited [
+        set visited lput self visited
+        set stack lput self stack
+      ]
+    ]
+
+  ]
+  report 0
+
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
