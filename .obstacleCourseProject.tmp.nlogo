@@ -17,11 +17,12 @@ to setup
   clear-all
   set number-of-robots 5
   set times (list)
+  set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
   start-round
 end
 
 to start-round
-  ;; these lines DO NOT clear output, globals, or plots.
+  ;; these lines DO NOT clear globals or plots.
   clear-ticks
   clear-turtles
   clear-patches
@@ -29,19 +30,16 @@ to start-round
   set goal-found 0
 
   create-turtles 5 [set messages (list) ]
-
   create-obstacles
-
-  let goal-exists 0
-  while [goal-exists = 0] [
-    set goal-exists create-goal ;; create-goal reports 1 for success, 0 for failure
-  ]
+  create-goal ;; tries to create goal until it successfully creates one
 
   ;; check with DFS that a path to goal exists
-  let obstacles-exist 0
+  let obstacles-exist dfs ;; dfs reports 0 (failure) or 1 (success)
   while [obstacles-exist = 0] [
     create-obstacles
-    set obstacles-exist dfs ;; reports 0 (failure) or 1 (success)
+    create-goal
+    set obstacles-exist dfs
+    show obstacles-exist
   ]
 
   reset-ticks
@@ -58,15 +56,46 @@ to go ;;basic stand-in for go procedure
 end
 
 to create-obstacles
-  repeat 100 [ ;;will generate obstacles quasi-randomly
+  clear-obstacles
+  repeat 400 [ ;;will generate obstacles quasi-randomly
     let x random 32
     let y random 32
     set x (x - 16)
     set y (y - 16)
-    if x < -2 or y < -2 or x > 2 or y > 2 [
-      ask patch x y [spawn-obstacle]
+    let obstacle patch x y
+    if (x < -2 or y < -2 or x > 2 or y > 2) and (obstacle != goal) [
+      ask obstacle [spawn-obstacle]
     ]
   ]
+end
+
+to clear-obstacles
+  ask patches [
+    if pcolor = blue [ set pcolor black ]
+  ]
+end
+
+;;this will turn a patch yellow if it isn't an obstacle patch
+;;further work will need to be done to minimize the chance of
+;;the goal spawning in a blank space in the center of an obstacle
+to create-goal
+  a
+
+  let done 0
+  while [ done = 0 ] [
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+
+    let p patch x y
+    if ([pcolor] of p != blue) and (p != patch 0 0)  [
+      ask p [set pcolor yellow]
+      set goal p
+      set done 1
+    ]
+  ]
+
 end
 
 to check-completion
@@ -294,23 +323,8 @@ to spawn-obstacle
   ]
 end
 
-;;this will turn a patch yellow if it isn't an obstacle patch
-;;further work will need to be done to minimize the chance of
-;;the goal spawning in a blank space in the center of an obstacle
-to-report create-goal
-  let x random 32
-  let y random 32
-  set x (x - 16)
-  set y (y - 16)
-  if [pcolor] of patch x y != blue [
-    ask patch x y [set pcolor yellow]
-    set goal patch x y
-    report 1
-  ]
-  report 0
-end
-
 to-report dfs
+  show "DFS RAN"
   ; G is the graph, s is the starting node, g is the goal node
   let visited (list)
   let stack (list)   ; to be used as a stack
@@ -324,23 +338,26 @@ to-report dfs
     let current last stack
     set stack remove-item (len - 1) stack
 
+    show (word [pxcor] of current " " [pycor] of current)
+
     if current = patch 0 0 [ report 1 ]
 
     ; generate neighbors of current, as an agentset
     let neighbor-set turtles ;; this is just a bogus value to initialize the agentset
     ask current [ set neighbor-set neighbors4 ] ;; 4 neighbors of current patch
-    show current
-    show neighbor-l
+    ; NOTE: neighbor-set includes obstacles. we must check in the following loop that the neighbor
+    ; is not an obstacle before actually visiting it.
 
     ask neighbor-set [ ;; ask each neighbor patch to do the following:
       ;; here, self refers to the element of neighbor-set we are currently processing
-      if not member? self visited [
+      if (not member? self visited) and (pcolor != blue) [
         set visited lput self visited
         set stack lput self stack
       ]
     ]
 
   ]
+  show "FINISHED"
   report 0
 
 end
