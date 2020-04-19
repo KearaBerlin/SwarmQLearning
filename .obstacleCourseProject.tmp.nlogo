@@ -37,16 +37,14 @@ to go ;;basic stand-in for go procedure
   ask turtles [choose-action-no-stimulus]
   ask turtles [move]
   ask turtles [mark-as-explored]
-  ;ask turtles [show exploration-value]
+  ask turtles [show exploration-value]
   tick
 end
 
 to check-completion
-  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
-  show percent-at-goal
+  let percent-at-goal ((number-of-turtles - count turtles) /  number-of-turtles)
   if percent-at-goal >= 0.75 [
-    show "ROUND OVER"
-    ;; TODO this is not all it should do :)
+    s
   ]
 end
 
