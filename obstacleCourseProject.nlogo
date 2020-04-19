@@ -1,4 +1,5 @@
-globals [number-of-robots goal-found goal-exists goal]
+globals [number-of-robots goal-found goal-exists goal
+         times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
@@ -15,6 +16,19 @@ l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high 
 to setup
   clear-all
   set number-of-robots 5
+  set times (list)
+  start-round
+end
+
+to start-round
+  ;; these lines DO NOT clear output, globals, or plots.
+  clear-ticks
+  clear-turtles
+  clear-patches
+  clear-drawing
+  set goal-exists 0
+  set goal-found 0
+
   create-turtles 5 [set messages (list) ]
   repeat 100 [ ;;will generate obstacles quasi-randomly
     let x random 32
@@ -43,10 +57,10 @@ end
 
 to check-completion
   let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
-  show percent-at-goal
   if percent-at-goal >= 0.75 [
-    show "ROUND OVER"
-    ;; TODO this is not all it should do :)
+    set times lput ticks times
+    show times
+    start-round
   ]
 end
 
