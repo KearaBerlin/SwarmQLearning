@@ -57,7 +57,7 @@ end
 
 to create-obstacles
   clear-obstacles
-  repeat 400 [ ;;will generate obstacles quasi-randomly
+  repeat 100 [ ;;will generate obstacles quasi-randomly
     let x random 32
     let y random 32
     set x (x - 16)

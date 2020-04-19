@@ -57,7 +57,7 @@ end
 
 to create-obstacles
   clear-obstacles
-  repeat 400 [ ;;will generate obstacles quasi-randomly
+  repeat 00 [ ;;will generate obstacles quasi-randomly
     let x random 32
     let y random 32
     set x (x - 16)
@@ -79,7 +79,7 @@ end
 ;;further work will need to be done to minimize the chance of
 ;;the goal spawning in a blank space in the center of an obstacle
 to create-goal
-  a
+  ask goal [ set pcolor black ]
 
   let done 0
   while [ done = 0 ] [
