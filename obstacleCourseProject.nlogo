@@ -1,6 +1,7 @@
 globals [number-of-robots goal-found goal
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
+             dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
 ;;the first letter denotes how many obstacles there are:
@@ -48,9 +49,11 @@ end
 to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
   ask turtles [broadcast-messages]
+  ask turtles [record-distance-to-goal]
   ask turtles [choose-action-no-stimulus]
   ask turtles [move]
   ask turtles [mark-as-explored]
+  ask turtles [reweigh-values]
   ;ask turtles [show exploration-value]
   tick
 end
@@ -105,6 +108,11 @@ to check-completion
     show times
     start-round
   ]
+end
+
+;; records this turtle's own distance to the goal in an instance var
+to record-distance-to-goal
+  set dist-to-goal distance goal
 end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
@@ -271,12 +279,31 @@ end
 ;;depending on its calculated value
 ;;UNFINISHED
 to reweigh-values
+  let reward calculate-reward
 end
 
-;;this will calculate the value of an action through the
+;;this will calculate the value of an action the robot just took through the
 ;;Q-learning algorithm
 ;;UNFINISHED
-to calculate-action-value
+to-report calculate-reward
+  let toward-goal-reward 0
+  ; calculate whether the distance to goal changed
+  let prev-dist dist-to-goal
+  let dist distance goal
+  if dist > prev-dist [
+    set toward-goal-reward 0 ; TODO not sure whether these are actually the values we want.
+  ]
+  if dist = prev-dist [
+    set toward-goal-reward 0.5
+  ]
+  if dist < prev-dist [
+    set toward-goal-reward 1
+  ]
+
+  ;; TODO more calculations...
+  ;; ... then calculate a weighted combination of the smaller reward values.
+
+  report 0 ; TODO report the correct reward here.
 end
 
 ;;this will specifically take the scenario-value from
@@ -324,7 +351,6 @@ to spawn-obstacle
 end
 
 to-report dfs
-  show "DFS RAN"
   ; G is the graph, s is the starting node, g is the goal node
   let visited (list)
   let stack (list)   ; to be used as a stack
@@ -337,8 +363,6 @@ to-report dfs
     let len length stack
     let current last stack
     set stack remove-item (len - 1) stack
-
-    show (word [pxcor] of current " " [pycor] of current)
 
     if current = patch 0 0 [ report 1 ]
 
@@ -357,7 +381,6 @@ to-report dfs
     ]
 
   ]
-  show "FINISHED"
   report 0
 
 end
