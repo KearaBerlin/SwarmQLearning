@@ -1,5 +1,5 @@
 globals [number-of-robots
-         goal-found goal
+         goal goal-found
          learning-rate buffer
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
@@ -53,10 +53,10 @@ end
 to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
 
-  if goal-found  and buffer = 0 [
+  if goal-found = 1 and buffer = 0 [
     ; TODO adjust learning-rate so that robots that are navigating badly affect learning less.
   ]
-  if goal-found and buffer > 0 [
+  if goal-found = 1 and buffer > 0 [
     set buffer (buffer - 1)
   ]
 
@@ -186,33 +186,7 @@ to broadcast-location
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
-to-report exploration-value
-  let value 0
-  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 45 1 != green [ ;;patch diagonal up right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
-    set value (value + 1)
-  ]
-  report value
+
 end
 
 ;;this will calculate a unique value for each orientation of obstacles around a robot
@@ -305,12 +279,12 @@ to-report calculate-reward
 
   ;; TODO if the robot moved onto an obstacle, make the obstacle-reward very negative.
 
-  if not goal-found [
+  if goal-found = 0 [
     ; TODO calculate explore-reward here
     ; TODO calculate spread-reward here: reward the robots for spreading out
   ]
 
-  if goal-found [
+  if goal-found = 1 [
 
     ; calculate whether the distance to goal changed
     let prev-dist dist-to-goal
