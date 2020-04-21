@@ -1,17 +1,19 @@
 globals [number-of-robots
          goal goal-found
          learning-rate buffer
-         times]
+         times exploration-rate]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
-
+]
 
 ;;this will reset the model and set up the robots
 to setup
   clear-all
   set number-of-robots 5
+  set exploration-rate 1
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
+  ;; initialize 4x81 2D list of values according to each action and each state
   start-round
 end
 
@@ -59,6 +61,10 @@ to go ;;basic stand-in for go procedure
   ask turtles [reweigh-values]
   ;ask turtles [show exploration-value]
   tick
+end
+
+to calculate-exploration
+
 end
 
 to create-obstacles
@@ -365,7 +371,6 @@ to-report dfs
         set stack lput self stack
       ]
     ]
-
   ]
   report 0
 

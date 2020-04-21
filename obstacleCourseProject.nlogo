@@ -4,16 +4,6 @@ globals [number-of-robots
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
-;;the following lists hold action weights
-;;for different scenarios the turtles can encounter
-;;the first letter denotes how many obstacles there are:
-;;s = single, d = double, t = triple
-;;the middle letter(s) denote where they are:
-;;f = forward, l = left, r = right
-;;the last letter denotes whether the exploration value is high or low:
-;;h = high (3+), l = low (2 or less)
-h-list sfh-list slh-list srh-list dflh-list dfrh-list dlrh-list th-list ;;low e-value
-l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high e-value
 
 ;;this will reset the model and set up the robots
 to setup
