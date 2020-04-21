@@ -1,4 +1,6 @@
-globals [number-of-robots goal-found goal
+globals [number-of-robots
+         goal-found goal
+         learning-rate buffer
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
@@ -29,6 +31,8 @@ to start-round
   clear-patches
   clear-drawing
   set goal-found 0
+  set buffer 7  ;; the number of turns that we wait after the goal is found before reducing learning-rate,
+                ;; to allow good navigators to get to the goal while still impacting learning a lot.
 
   create-turtles 5 [set messages (list) ]
   create-obstacles
@@ -48,6 +52,14 @@ end
 
 to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
+
+  if goal-found  and buffer = 0 [
+    ; TODO adjust learning-rate so that robots that are navigating badly affect learning less.
+  ]
+  if goal-found and buffer > 0 [
+    set buffer (buffer - 1)
+  ]
+
   ask turtles [broadcast-messages]
   ask turtles [record-distance-to-goal]
   ask turtles [choose-action-no-stimulus]
@@ -287,21 +299,36 @@ end
 ;;UNFINISHED
 to-report calculate-reward
   let toward-goal-reward 0
-  ; calculate whether the distance to goal changed
-  let prev-dist dist-to-goal
-  let dist distance goal
-  if dist > prev-dist [
-    set toward-goal-reward 0 ; TODO not sure whether these are actually the values we want.
-  ]
-  if dist = prev-dist [
-    set toward-goal-reward 0.5
-  ]
-  if dist < prev-dist [
-    set toward-goal-reward 1
-  ]
-  ;; TODO more calculations...
-  ;; ... then calculate a weighted combination of the smaller reward values.
+  let explore-reward 0
+  let spread-reward 0
+  let obstacle-reward 0
 
+  ;; TODO if the robot moved onto an obstacle, make the obstacle-reward very negative.
+
+  if not goal-found [
+    ; TODO calculate explore-reward here
+    ; TODO calculate spread-reward here: reward the robots for spreading out
+  ]
+
+  if goal-found [
+
+    ; calculate whether the distance to goal changed
+    let prev-dist dist-to-goal
+    let dist distance goal
+    if dist > prev-dist [
+      set toward-goal-reward -1 ; TODO not sure whether these are actually the values we want.
+    ]
+    if dist = prev-dist [
+      set toward-goal-reward 0
+    ]
+    if dist < prev-dist [
+      set toward-goal-reward 1
+    ]
+  ]
+
+  ;; TODO calculate a weighted combination of the smaller reward values.
+
+  report 0 ; TODO report the correct reward here.
 end
 
 ;;this will specifically take the scenario-value from
