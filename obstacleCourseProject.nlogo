@@ -3,7 +3,7 @@ globals [number-of-robots
          learning-rate buffer exploration-rate
          q-table
          times]
-turtles-own [messages ;; a list of the messages the robot recieved for this tick
+turtles-own [state
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
 ;;the following lists hold action weights
 ;;for different scenarios the turtles can encounter
@@ -37,7 +37,7 @@ to start-round
   set buffer 7  ;; the number of turns that we wait after the goal is found before reducing learning-rate,
                 ;; to allow good navigators to get to the goal while still impacting learning a lot.
 
-  create-turtles 5 [set messages (list) ]
+  create-turtles 5 [set state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
   create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
 
@@ -63,7 +63,7 @@ to go ;;basic stand-in for go procedure
     set buffer (buffer - 1)
   ]
 
-  ask turtles [broadcast-messages]
+  ask turtles [update-state]
   ask turtles [record-distance-to-goal]
   ask turtles [choose-action-no-stimulus]
   ask turtles [move]
@@ -174,18 +174,16 @@ to choose-action-no-stimulus ;;to be used when nothing is sensed, no signals rec
     ])
 end
 
-to broadcast-messages
-  ;; broadcast this robot's location as [x, y, id] where id is who number
-  broadcast-location
-end
-
-to broadcast-location
-  let message (list xcor ycor who)
-
-  ask turtles in-radius 5 [
-    set messages lput message messages  ;; appends the new message to the nearby turtle's list
+to update-state
+  ;; sense the four squares around myself: [ahead, right, behind, left]
+  let sensor-output (list)
+  let angle 0
+  while [angle < 360] [
+    let p patch-right-and-ahead angle 1
+    let colour [pcolor] of p
+    set sensor-output lput colour sensor-output
+    set angle angle + 90
   ]
-  ;print ( word who ": " x ", " y )
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
