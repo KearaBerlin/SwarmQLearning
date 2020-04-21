@@ -1,19 +1,16 @@
 globals [number-of-robots
          goal goal-found
-         learning-rate buffer
+         learning-rate
          times]
-<<<<<<< HEAD
-turtles-own [messages ;; a list of the messages the robot recieved for this tick
-             dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
-=======
 turtles-own [state
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)]
->>>>>>> cd9afc6c752c08488d89fe1a007330d83878d31a
+]
 
 ;;this will reset the model and set up the robots
 to setup
   clear-all
   set number-of-robots 5
+  set learning-rate 0.5
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
   start-round
@@ -26,8 +23,6 @@ to start-round
   clear-patches
   clear-drawing
   set goal-found 0
-  set buffer 7  ;; the number of turns that we wait after the goal is found before reducing learning-rate,
-                ;; to allow good navigators to get to the goal while still impacting learning a lot.
 
   create-turtles 5 [set state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
   create-obstacles
@@ -48,19 +43,12 @@ end
 to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
 
-  if goal-found = 1 and buffer = 0 [
-    ; TODO adjust learning-rate so that robots that are navigating badly affect learning less.
-  ]
-  if goal-found = 1 and buffer > 0 [
-    set buffer (buffer - 1)
-  ]
-
   ask turtles [update-state]
   ask turtles [record-distance-to-goal]
   ask turtles [choose-action-no-stimulus]
   ask turtles [move]
   ask turtles [mark-as-explored]
-  ask turtles [reweigh-values]
+  ask turtles [update-table]
   ;ask turtles [show exploration-value]
   tick
 end
@@ -176,25 +164,7 @@ to update-state
     set sensor-output lput colour sensor-output
     set angle angle + 90
   ]
-end
-
-;;this will calculate a unique value for each orientation of obstacles around a robot
-to-report obstacle-value
-  let value 0
-  if [pcolor] of patch-ahead 1 = blue [
-    set value (value + 1)
-  ] if [pcolor] of patch-right-and-ahead 90 1 = blue [
-    set value (value + .5)
-  ] if [pcolor] of patch-left-and-ahead 90 1 = blue [
-    set value (value + .25)
-  ]
-  report value
-end
-
-;;this will calculate a final value for the scenario a robot finds itself in
-;;UNFINISHED
-to-report scenario-value ;;should add obstacle-value to exploration-value
-  let value 0
+  set state sensor-output
 end
 
 ;;below are the six basic actions a robot can take
@@ -244,16 +214,10 @@ to mark-as-explored
   set pcolor green
 end
 
-;;this will set up a single action weight list
-;;each item in the list will begin with the same value
-;;UNFINISHED
-to fill-list [weight-list]
-end
-
 ;;this will add or subtract weight to/from the completed action
 ;;depending on its calculated value
 ;;UNFINISHED
-to reweigh-values
+to update-table
   let reward calculate-reward
 end
 
@@ -292,15 +256,6 @@ to-report calculate-reward
   ;; TODO calculate a weighted combination of the smaller reward values.
 
   report 0 ; TODO report the correct reward here.
-end
-
-;;this will specifically take the scenario-value from
-;;the robot and use it to determine which list the robot
-;;should take actions from and reweigh
-;;this may be unnecessary; this could possibly be done
-;;in the choose-action function
-;;UNFINISHED, MAY BE UNNECESSARY
-to determine-scenario
 end
 
 ;;this will generate blue squares at a point on the map
