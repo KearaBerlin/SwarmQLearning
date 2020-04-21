@@ -1,20 +1,10 @@
 globals [number-of-robots
          goal goal-found
          learning-rate buffer
-         q-table
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
-;;the following lists hold action weights
-;;for different scenarios the turtles can encounter
-;;the first letter denotes how many obstacles there are:
-;;s = single, d = double, t = triple
-;;the middle letter(s) denote where they are:
-;;f = forward, l = left, r = right
-;;the last letter denotes whether the exploration value is high or low:
-;;h = high (3+), l = low (2 or less)
-h-list sfh-list slh-list srh-list dflh-list dfrh-list dlrh-list th-list ;;low e-value
-l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high e-value
+
 
 ;;this will reset the model and set up the robots
 to setup
@@ -22,7 +12,6 @@ to setup
   set number-of-robots 5
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
-  ;; TODO initialize q-table to be a 4x81 2D list with all zeros
   start-round
 end
 
@@ -185,10 +174,6 @@ to broadcast-location
     set messages lput message messages  ;; appends the new message to the nearby turtle's list
   ]
   ;print ( word who ": " x ", " y )
-end
-
-;;this will calculate a value for how unexplored the robot's immediate area is
-
 end
 
 ;;this will calculate a unique value for each orientation of obstacles around a robot
