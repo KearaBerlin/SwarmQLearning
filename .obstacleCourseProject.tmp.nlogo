@@ -167,6 +167,7 @@ to update-state
   set state sensor-output
 end
 
+
 ;;below are the six basic actions a robot can take
 to turn-towards [object]
   face object
@@ -257,8 +258,6 @@ to-report calculate-reward
 
   report 0 ; TODO report the correct reward here.
 end
-
-
 
 ;;this will generate blue squares at a point on the map
 ;;each blue patch will be treated like a wall, so they will act as obstacles
