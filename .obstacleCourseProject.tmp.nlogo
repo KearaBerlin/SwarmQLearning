@@ -1,20 +1,9 @@
 globals [number-of-robots
-         goal-found goal
-         learning-rate buffer exploration-rate
-         q-table
+         goal goal-found
+         learning-rate buffer
          times]
 turtles-own [state
-             dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
-;;the following lists hold action weights
-;;for different scenarios the turtles can encounter
-;;the first letter denotes how many obstacles there are:
-;;s = single, d = double, t = triple
-;;the middle letter(s) denote where they are:
-;;f = forward, l = left, r = right
-;;the last letter denotes whether the exploration value is high or low:
-;;h = high (3+), l = low (2 or less)
-h-list sfh-list slh-list srh-list dflh-list dfrh-list dlrh-list th-list ;;low e-value
-l-list sfl-list sll-list srl-list dfll-list dfrl-list dlrl-list tl-list] ;;high e-value
+             dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)] ;;high e-value
 
 ;;this will reset the model and set up the robots
 to setup
@@ -22,8 +11,6 @@ to setup
   set number-of-robots 5
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
-  set exploration-rate 1
-  ;; TODO initialize q-table to be a 4x81 2D list with all zeros
   start-round
 end
 
@@ -37,7 +24,7 @@ to start-round
   set buffer 7  ;; the number of turns that we wait after the goal is found before reducing learning-rate,
                 ;; to allow good navigators to get to the goal while still impacting learning a lot.
 
-  create-turtles 5 [set state (n-values 4 [black] ] ;initialize state to a length 4 list of the color black
+  create-turtles 5 [set state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
   create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
 
@@ -184,36 +171,6 @@ to update-state
     set sensor-output lput colour sensor-output
     set angle angle + 90
   ]
-end
-
-;;this will calculate a value for how unexplored the robot's immediate area is
-to-report exploration-value
-  let value 0
-  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 45 1 != green [ ;;patch diagonal up right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
-    set value (value + 1)
-  ]
-  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
-    set value (value + 1)
-  ]
-  report value
 end
 
 ;;this will calculate a unique value for each orientation of obstacles around a robot
