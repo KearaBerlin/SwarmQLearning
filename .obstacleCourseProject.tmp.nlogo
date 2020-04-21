@@ -1,6 +1,7 @@
 globals [number-of-robots
          goal-found goal
          learning-rate buffer
+         q-table
          times]
 turtles-own [messages ;; a list of the messages the robot recieved for this tick
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)
@@ -21,6 +22,7 @@ to setup
   set number-of-robots 5
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
+  ;; TODO initialize q-table to be a 4x81 2D list with all zeros
   start-round
 end
 
@@ -53,10 +55,10 @@ end
 to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
 
-  if goal-found  and buffer = 0 [
+  if goal-found = 1 and buffer = 0 [
     ; TODO adjust learning-rate so that robots that are navigating badly affect learning less.
   ]
-  if goal-found and buffer > 0 [
+  if goal-found = 1 and buffer > 0 [
     set buffer (buffer - 1)
   ]
 
@@ -305,12 +307,12 @@ to-report calculate-reward
 
   ;; TODO if the robot moved onto an obstacle, make the obstacle-reward very negative.
 
-  if not goal-found [
+  if goal-found = 0 [
     ; TODO calculate explore-reward here
     ; TODO calculate spread-reward here: reward the robots for spreading out
   ]
 
-  if goal-found [
+  if goal-found = 1 [
 
     ; calculate whether the distance to goal changed
     let prev-dist dist-to-goal
