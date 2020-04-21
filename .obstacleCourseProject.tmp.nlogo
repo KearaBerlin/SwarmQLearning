@@ -49,6 +49,7 @@ to go ;;basic stand-in for go procedure
   ask turtles [move]
   ask turtles [mark-as-explored]
   ask turtles [update-table]
+  ;ask turtles [show spread-value]
   ;ask turtles [show exploration-value]
   tick
 end
@@ -167,6 +168,52 @@ to update-state
   set state sensor-output
 end
 
+;;this will calculate a value for how unexplored the robot's immediate area is
+to-report exploration-value
+  let value 0
+  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 45 1 != green [ ;;patch diagonal up right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
+    set value (value + 1)
+  ]
+  report value
+end
+
+to-report spread-value
+  let id 0
+  repeat number-of-robots [
+    let x-diff (([xcor] of turtle id) - xcor)
+    let y-diff (([ycor] of turtle id) - ycor)
+    if x-diff < 0 [
+      set x-diff (x-diff * -1)
+    ]
+    if y-diff < 0 [
+      set y-diff (y-diff * -1)
+    ]
+    set x-diff round (x-diff / 10)
+    set y-diff round (y-diff / 10)
+    report (x-diff + y-diff)
+  ]
+end
 
 ;;below are the six basic actions a robot can take
 to turn-towards [object]
@@ -234,8 +281,9 @@ to-report calculate-reward
   ;; TODO if the robot moved onto an obstacle, make the obstacle-reward very negative.
 
   if goal-found = 0 [
-    ; TODO calculate explore-reward here
-    ; TODO calculate spread-reward here: reward the robots for spreading out
+    set explore-reward exploration-value
+
+    ;
   ]
 
   if goal-found = 1 [
