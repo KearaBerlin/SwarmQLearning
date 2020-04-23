@@ -1,6 +1,6 @@
 globals [number-of-robots
          goal goal-found
-         learning-rate
+         learning-rate exploration-rate
          times]
 turtles-own [state
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)]
@@ -11,6 +11,7 @@ to setup
   clear-all
   set number-of-robots 5
   set learning-rate 0.5
+  set exploration-rate 1
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
   start-round

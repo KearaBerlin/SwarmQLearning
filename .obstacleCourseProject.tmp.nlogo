@@ -282,8 +282,7 @@ to-report calculate-reward
 
   if goal-found = 0 [
     set explore-reward exploration-value
-
-    ;
+    set spread-reward spread-value
   ]
 
   if goal-found = 1 [
