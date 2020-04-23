@@ -261,7 +261,7 @@ to update-table
 
   let state-number state-to-number state
   ;let row item action q-table
-  ;let old-q-value item state-number row ;; TODO having a lot of confusion over what exactly is in q-table, its dimensions, and how to access elements and rows...
+  ;let old-q-value item state-number row ;; TODO having a lot of confusion over what exa
   let old-q-value 0
 
   ;; TODO calculate estimated next state given action. should it not look over obstacles?
