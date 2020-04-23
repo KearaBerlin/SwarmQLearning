@@ -52,7 +52,7 @@ to go ;;basic stand-in for go procedure
 
   ask turtles [update-state]
   ask turtles [record-distance-to-goal]
-  ask turtles [choose-action-no-stimulus]
+  ask turtles [choose-action]
   ask turtles [move]
   ask turtles [mark-as-explored]
   ask turtles [update-table]
@@ -120,35 +120,17 @@ end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
 ;;UNFINISHED
-to choose-action [object] ;;right now, actions are completely randomized
-  let action-number (random 6)
-  (ifelse
-    action-number = 0 [
-      turn-towards object
-    ]
-    action-number = 1 [
-      turn-from object
-    ]
-    action-number = 2 [
-      turn-up
-    ]
-    action-number = 3 [
-      turn-down
-    ]
-    action-number = 4 [
-      turn-left
-    ]
-    action-number = 5 [
-      turn-right
-    ])
-end
-
-;;this will detail how an action is chosen when there are no obstacles
-;;UNFINISHED, MAY BE UNNECESSARY
-to choose-action-no-stimulus ;;to be used when nothing is sensed, no signals received
-  let action-number random 4
-  (ifelse
-    action-number = 0 [
+to choose-action
+  ;; decide whether to explore or exploit the table
+  let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
+  if rand > exploration-rate [
+    ;; TODO exploit q-table to decide which action to take
+  ]
+  if rand <= exploration-rate [
+    ;; randomly explore
+    let action-number (random 4)
+    (ifelse
+      action-number = 0 [
       turn-up
     ]
     action-number = 1 [
@@ -160,6 +142,7 @@ to choose-action-no-stimulus ;;to be used when nothing is sensed, no signals rec
     action-number = 3 [
       turn-right
     ])
+  ]
 end
 
 to update-state
