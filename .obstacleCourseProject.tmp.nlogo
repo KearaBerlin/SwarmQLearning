@@ -1,9 +1,9 @@
 globals [number-of-robots
          goal goal-found
-         learning-rate exploration-rate
+         learning-rate exploration-rate discount-rate
          q-table
          times]
-turtles-own [state
+turtles-own [state action
              dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)]
 ]
 
@@ -13,6 +13,7 @@ to setup
   set number-of-robots 5
   set learning-rate 0.5
   set exploration-rate 1
+  set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
 
@@ -120,7 +121,7 @@ end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
 ;;UNFINISHED
-to choose-action [object] ;;right now, actions are completely randomized
+to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
   if rand > exploration-rate [
@@ -128,18 +129,18 @@ to choose-action [object] ;;right now, actions are completely randomized
   ]
   if rand <= exploration-rate [
     ;; randomly explore
-    let action-number (random 4)
+    set action (random 4)
     (ifelse
-      action-number = 0 [
+      action = 0 [
       turn-up
     ]
-    action-number = 1 [
+    action = 1 [
       turn-down
     ]
-    action-number = 2 [
+    action = 2 [
       turn-left
     ]
-    action-number = 3 [
+    action = 3 [
       turn-right
     ])
   ]
@@ -257,6 +258,10 @@ end
 ;;UNFINISHED
 to update-table
   let reward calculate-reward
+  let old-q-value (item 0 (item action q-table)) ;; TODO replace 0 with a state number somehow,
+  ;; get the max of the row that corresponds to the "next state" so maybe we want to let the
+  ;; robots look two squares ahead, but only include the first squares right around it in the
+  ;; current state? That would just let it predict the state one step ahead.
 end
 
 ;;this will calculate the value of an action the robot just took through the
