@@ -260,9 +260,15 @@ to update-table
   let reward calculate-reward
   let old-q-value (item 0 (item action q-table)) ;; TODO replace 0 with a state number somehow,
                                                 ; maybe we need a table after all to use keys?
+  ;; TODO calculate estimated next state given action. should it not look over obstacles?
+  let next-state 0 ; this is a dummy for now
   ;; get the max of the row that corresponds to the "next state" so maybe we want to let the
   ;; robots look two squares ahead, but only include the first squares right around it in the
   ;; current state? That would just let it predict the state one step ahead.
+  let estimated-max-future-reward (max item next-state q-table)
+
+  ;; calculate new q-value
+  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
 end
 
 ;;this will calculate the value of an action the robot just took through the
