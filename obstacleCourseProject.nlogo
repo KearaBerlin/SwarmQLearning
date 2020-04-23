@@ -267,8 +267,12 @@ to update-table
   ;; current state? That would just let it predict the state one step ahead.
   let estimated-max-future-reward (max item next-state q-table)
 
-  ;; calculate new q-value
-  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+  ;; calculate new q-value: TODO this line currently gives an error when run.
+  ;let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+  let new-q-value 0 ;replace this once we fix the line above
+  ;; place it in the table
+  let new-row replace-item action q-table new-q-value
+  set q-table replace-item 0 q-table new-row ;; TODO replace 0 with state number. also, this line is EXTREMELY SLOW.
 end
 
 ;;this will calculate the value of an action the robot just took through the
@@ -399,8 +403,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
