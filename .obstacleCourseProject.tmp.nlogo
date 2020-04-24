@@ -21,7 +21,6 @@ to setup
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
   ;; where 0 <= STATE < 81, 0 <= ACTION < 4
   set q-table n-values 81 [n-values 4 [0]]
-  show q-table
 
   start-round
 end
@@ -278,14 +277,13 @@ to update-table
   let estimated-max-future-reward (max item state-number q-table) ;; TODO I think we need to flip the table
 
   ;; calculate new q-value: TODO this line currently gives an error when run.
-  ;let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-  let new-q-value  ;replace this once we fix the line above
+  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+
 
   ;; place it in the table
   let old-row item state-number q-table
   let new-row replace-item action old-row new-q-value
   set q-table replace-item state-number q-table new-row
-  show q-table
 
 end
 
