@@ -109,12 +109,16 @@ to create-goal
 end
 
 to check-completion
-  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
-  if percent-at-goal >= 0.75 [
+  if (number-of-robots > count turtles) [
     set times lput ticks times
     show times
-    start-round
-  ]
+    s
+;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
+;  if percent-at-goal >= 0.75 [
+;    set times lput ticks times
+;    show times
+;    start-round
+;  ]
 end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
@@ -123,10 +127,10 @@ to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
   if rand > exploration-rate [
-    ;; TODO exploit q-table to decide which action to take
+    ;; exploit q-table to decide which action to take
     let state-number state-to-number state
-    let row
-    let best-action max
+    let row item state-number q-table
+    ;; TODO find which index holds the max value in row
   ]
   if rand <= exploration-rate [
     ;; randomly explore
