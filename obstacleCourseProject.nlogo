@@ -279,11 +279,13 @@ to update-table
 
   ;; calculate new q-value: TODO this line currently gives an error when run.
   ;let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-  let new-q-value 0 ;replace this once we fix the line above
+  let new-q-value 1 ;replace this once we fix the line above
 
   ;; place it in the table
-  let new-row replace-item state-number q-table new-q-value
-  set q-table replace-item action q-table new-row
+  let old-row item state-number q-table
+  let new-row replace-item action old-row new-q-value
+  set q-table replace-item state-number q-table new-row
+  show q-table
 
 end
 
