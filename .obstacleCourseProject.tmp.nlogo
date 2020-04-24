@@ -124,6 +124,9 @@ to choose-action
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
   if rand > exploration-rate [
     ;; TODO exploit q-table to decide which action to take
+    let state-number state-to-number state
+    let row
+    let best-action max
   ]
   if rand <= exploration-rate [
     ;; randomly explore
@@ -276,9 +279,8 @@ to update-table
   ;; get the max of the row that corresponds to the "next state" ie current state after taking action
   let estimated-max-future-reward (max item state-number q-table) ;; TODO I think we need to flip the table
 
-  ;; calculate new q-value: TODO this line currently gives an error when run.
+  ;; calculate new q-value
   let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-
 
   ;; place it in the table
   let old-row item state-number q-table

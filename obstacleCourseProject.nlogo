@@ -123,7 +123,10 @@ to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
   if rand > exploration-rate [
-    ;; TODO exploit q-table to decide which action to take
+    ;; exploit q-table to decide which action to take
+    let state-number state-to-number state
+    let row item state-number q-table
+    ;; TODO find which index holds the max value in row
   ]
   if rand <= exploration-rate [
     ;; randomly explore
