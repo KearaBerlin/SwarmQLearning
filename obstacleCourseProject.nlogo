@@ -109,12 +109,17 @@ to create-goal
 end
 
 to check-completion
-  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
-  if percent-at-goal >= 0.75 [
+  if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
     set times lput ticks times
     show times
     start-round
   ]
+;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
+;  if percent-at-goal >= 0.75 [
+;    set times lput ticks times
+;    show times
+;    start-round
+;  ]
 end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
