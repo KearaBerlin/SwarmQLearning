@@ -4,7 +4,8 @@ globals [number-of-robots
          q-table
          times]
 turtles-own [state action
-             dist-to-goal  ;; this turtle's current distance to goal (for calculating reward)]
+             dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
+             turned-towards-obstacle ;;used when calculating reward
 ]
 
 ;;this will reset the model and set up the robots
@@ -32,9 +33,12 @@ to start-round
   clear-drawing
   set goal-found 0
 
-  create-turtles 5 [ set state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
+  create-turtles 5 [set state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
   create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
+
+  ;;have turtles set up their initial distance to the goal
+  ask turtles [set dist-to-goal distance goal]
 
   ;; check with DFS that a path to goal exists
   let obstacles-exist dfs ;; dfs reports 0 (failure) or 1 (success)
@@ -52,9 +56,9 @@ to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
 
   ask turtles [update-state]
-  ask turtles [record-distance-to-goal]
   ask turtles [choose-action]
   ask turtles [move]
+  ask turtles [show action-reward]
   ask turtles [mark-as-explored]
   ask turtles [update-table]
   ;ask turtles [show spread-value]
@@ -114,11 +118,6 @@ to check-completion
   ]
 end
 
-;; records this turtle's own distance to the goal in an instance var
-to record-distance-to-goal
-  set dist-to-goal distance goal
-end
-
 ;;this will detail how a robot chooses one of six weighted values in a scenario
 ;;UNFINISHED
 to choose-action
@@ -143,6 +142,12 @@ to choose-action
     action = 3 [
       turn-right
     ])
+  ]
+  ifelse [pcolor] of patch-ahead 1 = blue [
+      set turned-towards-obstacle 1
+  ]
+  [
+    set turned-towards-obstacle 0
   ]
 end
 
@@ -191,6 +196,7 @@ end
 
 to-report spread-value
   let id 0
+  let value 0
   repeat number-of-robots [
     let x-diff (([xcor] of turtle id) - xcor)
     let y-diff (([ycor] of turtle id) - ycor)
@@ -202,8 +208,10 @@ to-report spread-value
     ]
     set x-diff round (x-diff / 10)
     set y-diff round (y-diff / 10)
-    report (x-diff + y-diff)
+    set value (value + x-diff + y-diff)
+    set id id + 1
   ]
+  report value
 end
 
 ;;below are the six basic actions a robot can take
@@ -257,66 +265,47 @@ end
 ;;depending on its calculated value
 ;;UNFINISHED
 to update-table
-  let reward calculate-reward
-
-  let state-number state-to-number state
-  ;let row item action q-table
-  ;let old-q-value item state-number row ;; TODO having a lot of confusion over what exa
-  let old-q-value 0
-
+  let reward action-reward
+  let old-q-value (item 0 (item action q-table)) ;; TODO replace 0 with a state number somehow,
+                                                ; maybe we need a table after all to use keys?
   ;; TODO calculate estimated next state given action. should it not look over obstacles?
-  let next-state state-number ; this is a dummy for now
-
-  ;; get the max of the row that corresponds to the "next state" ie current state after taking action
-  let estimated-max-future-reward (max item 0 q-table) ;; TODO I think we need to flip the table
+  let next-state 0 ; this is a dummy for now
+  ;; get the max of the row that corresponds to the "next state" so maybe we want to let the
+  ;; robots look two squares ahead, but only include the first squares right around it in the
+  ;; current state? That would just let it predict the state one step ahead.
+  let estimated-max-future-reward (max item next-state q-table)
 
   ;; calculate new q-value: TODO this line currently gives an error when run.
-  ;let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-  let new-q-value 0 ;replace this once we fix the line above
-
+  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+  ;let new-q-value 0 ;replace this once we fix the line above
   ;; place it in the table
   ;let new-row replace-item action q-table new-q-value
-  ;set q-table replace-item state-number q-table new-row
-
-end
-
-;; given a state [a b c d] returns a distinct, stable number between 0 and 80 inclusive
-to-report state-to-number [state-list]
-  let shifted-list (list)
-  ; convert the state-list into a list of numbers between 0 and 2
-  foreach state-list [ x -> set shifted-list lput (color-to-number x) shifted-list ]
-  let a item 0 shifted-list
-  let b item 1 shifted-list
-  let c item 2 shifted-list
-  let d item 3 shifted-list
-  report a * 1 + b * 3 + c * 9 + d * 27
-end
-
-to-report color-to-number [x]
-  if x = black [report 0]
-  if x = green [report 1]
-  if x = blue [report 2]
-  report 0 ;; TODO don't we also need yellow? then we have more states...?
+  ;set q-table replace-item 0 q-table new-row ;; TODO replace 0 with state number. also, this line is EXTREMELY SLOW.
 end
 
 ;;this will calculate the value of an action the robot just took through the
 ;;Q-learning algorithm
 ;;UNFINISHED
-to-report calculate-reward
-  let toward-goal-reward 0
-  let explore-reward 0
-  let spread-reward 0
-  let obstacle-reward 0
+to-report action-reward
+  let total-reward 0 ;;calculated by adding rewards and subtractingpenalties
+  let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
+  let explore-reward 0 ;;whether or not the robot is moving into new territory
+  let spread-reward 0 ;;whether or not the robot is moving away from other robots
+  let obstacle-penalty 0 ;;used if the robot chooses to face towards an obstacle
 
-  ;; TODO if the robot moved onto an obstacle, make the obstacle-reward very negative.
+  set
 
-  if goal-found = 0 [
-    set explore-reward exploration-value
+  ;;exploration and spreading out is prioritized when the goal has not been found
+  ifelse goal-found = 0 [
+    ;other methods determine the exploration and spread values
+    set explore-reward exploration-value / 6
     set spread-reward spread-value
+    ;;calculate the reward
+    set total-reward exploration-value + spread-value - obstacle-penalty
   ]
 
-  if goal-found = 1 [
-
+  ;;moving towards the goal is prioritized when the goal has been found
+  [
     ; calculate whether the distance to goal changed
     let prev-dist dist-to-goal
     let dist distance goal
@@ -327,13 +316,15 @@ to-report calculate-reward
       set toward-goal-reward 0
     ]
     if dist < prev-dist [
-      set toward-goal-reward 1
+      set toward-goal-reward 5
     ]
+    set dist-to-goal dist
+    set total-reward toward-goal-reward - obstacle-penalty
   ]
 
   ;; TODO calculate a weighted combination of the smaller reward values.
 
-  report 0 ; TODO report the correct reward here.
+  report total-reward
 end
 
 ;;this will generate blue squares at a point on the map
