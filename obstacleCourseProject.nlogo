@@ -20,7 +20,8 @@ to setup
 
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
   ;; where 0 <= STATE < 81, 0 <= ACTION < 4
-  set q-table n-values 4 [n-values 81 [0]]
+  set q-table n-values 81 [n-values 4 [0]]
+  show q-table
 
   start-round
 end
@@ -58,7 +59,6 @@ to go ;;basic stand-in for go procedure
   ask turtles [update-state]
   ask turtles [choose-action]
   ask turtles [move]
-  ask turtles [show action-reward]
   ask turtles [mark-as-explored]
   ask turtles [update-table]
   ;ask turtles [show spread-value]
@@ -266,21 +266,44 @@ end
 ;;UNFINISHED
 to update-table
   let reward action-reward
-  let old-q-value (item 0 (item action q-table)) ;; TODO replace 0 with a state number somehow,
-                                                ; maybe we need a table after all to use keys?
+
+  let state-number state-to-number state
+  let row item state-number q-table
+  let old-q-value item action row
+
   ;; TODO calculate estimated next state given action. should it not look over obstacles?
-  let next-state 0 ; this is a dummy for now
-  ;; get the max of the row that corresponds to the "next state" so maybe we want to let the
-  ;; robots look two squares ahead, but only include the first squares right around it in the
-  ;; current state? That would just let it predict the state one step ahead.
-  let estimated-max-future-reward (max item next-state q-table)
+  let next-state state-number ; this is a dummy for now
+
+  ;; get the max of the row that corresponds to the "next state" ie current state after taking action
+  let estimated-max-future-reward (max item state-number q-table) ;; TODO I think we need to flip the table
 
   ;; calculate new q-value: TODO this line currently gives an error when run.
-  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-  ;let new-q-value 0 ;replace this once we fix the line above
+  ;let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+  let new-q-value 0 ;replace this once we fix the line above
+
   ;; place it in the table
-  ;let new-row replace-item action q-table new-q-value
-  ;set q-table replace-item 0 q-table new-row ;; TODO replace 0 with state number. also, this line is EXTREMELY SLOW.
+  let new-row replace-item state-number q-table new-q-value
+  set q-table replace-item action q-table new-row
+
+end
+
+;; given a state [a b c d] returns a distinct, stable number between 0 and 80 inclusive
+to-report state-to-number [state-list]
+  let shifted-list (list)
+  ; convert the state-list into a list of numbers between 0 and 2
+  foreach state-list [ x -> set shifted-list lput (color-to-number x) shifted-list ]
+  let a item 0 shifted-list
+  let b item 1 shifted-list
+  let c item 2 shifted-list
+  let d item 3 shifted-list
+  report a * 1 + b * 3 + c * 9 + d * 27
+end
+
+to-report color-to-number [x]
+  if x = black [report 0]
+  if x = green [report 1]
+  if x = blue [report 2]
+  report 0 ;; TODO don't we also need yellow? then we have more states...?
 end
 
 ;;this will calculate the value of an action the robot just took through the
