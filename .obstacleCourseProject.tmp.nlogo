@@ -283,7 +283,7 @@ to update-table
   let end-state-number state-to-number end-state
 
   ;; get the max of the row that corresponds to the "next state" ie current state after taking action
-  let estimated-max-future-reward (max item end-state-number q-table)
+  let estimated-max-future-reward (max item end-state-number q-table) ;; TODO I think we need to flip the table
 
   ;; calculate new q-value
   let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
