@@ -132,12 +132,16 @@ to choose-action
     ;; exploit q-table to decide which action to take
     let state-number state-to-number start-state
     let row item state-number q-table
-    ;; TODO find which index holds the max value in row
+    ;; find which index holds the max value in row
+    let max-reward max row
+    set action position max-reward row
   ]
   if rand <= exploration-rate [
     ;; randomly explore
     set action (random 4)
-    (ifelse
+  ]
+  ;; either way, now we execute the appropriate turn
+  (ifelse
       action = 0 [
       turn-up
     ]
@@ -150,7 +154,6 @@ to choose-action
     action = 3 [
       turn-right
     ])
-  ]
   ifelse [pcolor] of patch-ahead 1 = blue [
       set turned-towards-obstacle 1
   ]
@@ -283,7 +286,7 @@ to update-table
   let end-state-number state-to-number end-state
 
   ;; get the max of the row that corresponds to the "next state" ie current state after taking action
-  let estimated-max-future-reward (max item end-state-number q-table) ;; TODO I think we need to flip the table
+  let estimated-max-future-reward (max item end-state-number q-table)
 
   ;; calculate new q-value
   let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)

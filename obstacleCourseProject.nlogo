@@ -124,7 +124,6 @@ to check-completion
 end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
-;;UNFINISHED
 to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
@@ -132,25 +131,28 @@ to choose-action
     ;; exploit q-table to decide which action to take
     let state-number state-to-number start-state
     let row item state-number q-table
-    ;; TODO find which index holds the max value in row
+    ;; find which index holds the max value in row
+    let max-reward max row
+    set action position max-reward row
   ]
   if rand <= exploration-rate [
     ;; randomly explore
     set action (random 4)
-    (ifelse
+  ]
+  ;; either way, now we execute the appropriate turn
+  (ifelse
       action = 0 [
       turn-up
     ]
     action = 1 [
-      turn-down
+      turn-right
     ]
     action = 2 [
-      turn-left
+      turn-down
     ]
     action = 3 [
-      turn-right
+      turn-left
     ])
-  ]
   ifelse [pcolor] of patch-ahead 1 = blue [
       set turned-towards-obstacle 1
   ]
