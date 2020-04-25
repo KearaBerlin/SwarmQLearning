@@ -2,7 +2,8 @@ globals [number-of-robots
          goal goal-found
          learning-rate exploration-rate discount-rate
          q-table
-         times]
+         times
+         filename] ;; the name of a file you want to create to record the times output in
 turtles-own [start-state action end-state
              dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
              turned-towards-obstacle ;;used when calculating reward
@@ -17,6 +18,7 @@ to setup
   set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
+
 
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
   ;; where 0 <= STATE < 81, 0 <= ACTION < 4
@@ -112,10 +114,10 @@ end
 to check-completion
   if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
     set times lput ticks times
-    show times
+    ;show times
     ;; TODO not sure this is the right kind of equation we want, but it should decrease it more when learning-rate is larger
-    set -rate (learning-rate - 0.1 * learning-rate)
-    show learning-rate
+    set exploration-rate (exploration-rate - 0.001 * exploration-rate)
+    show exploration-rate
     start-round
   ]
 ;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
@@ -431,6 +433,12 @@ to-report dfs
   report 0
 
 end
+
+to output
+  file-open filename
+  file-write times
+  file-close
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -453,8 +461,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -484,6 +492,23 @@ BUTTON
 NIL
 go
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+15
+109
+84
+142
+NIL
+output
+NIL
 1
 T
 OBSERVER
