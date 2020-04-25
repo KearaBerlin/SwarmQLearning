@@ -112,7 +112,10 @@ end
 to check-completion
   if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
     set times lput ticks times
-    show times
+    ;show times
+    ;; TODO not sure this is the right kind of equation we want, but it should decrease it more when learning-rate is larger
+    set exploration-rate (exploration-rate - 0.001 * exploration-rate)
+    show exploration-rate
     start-round
   ]
 ;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
