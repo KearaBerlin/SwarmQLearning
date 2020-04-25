@@ -273,7 +273,6 @@ end
 
 ;;this will add or subtract weight to/from the completed action
 ;;depending on its calculated value
-;;UNFINISHED
 to update-table
   let reward action-reward
 
@@ -318,9 +317,8 @@ end
 
 ;;this will calculate the value of an action the robot just took through the
 ;;Q-learning algorithm
-;;UNFINISHED
 to-report action-reward
-  let total-reward 0 ;;calculated by adding rewards and subtractingpenalties
+  let total-reward 0 ;;calculated by adding rewards and subtracting penalties
   let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
   let explore-reward 0 ;;whether or not the robot is moving into new territory
   let spread-reward 0 ;;whether or not the robot is moving away from other robots
@@ -336,7 +334,7 @@ to-report action-reward
     set explore-reward exploration-value / 6
     set spread-reward spread-value
     ;;calculate the reward
-    set total-reward exploration-value + spread-value - obstacle-penalty
+    set total-reward (exploration-value + spread-value - obstacle-penalty)
   ]
 
   ;;moving towards the goal is prioritized when the goal has been found
@@ -354,10 +352,9 @@ to-report action-reward
       set toward-goal-reward 5
     ]
     set dist-to-goal dist
-    set total-reward toward-goal-reward - obstacle-penalty
-  ]
 
-  ;; TODO calculate a weighted combination of the smaller reward values.
+    set total-reward (toward-goal-reward - obstacle-penalty)
+  ]
 
   report total-reward
 end

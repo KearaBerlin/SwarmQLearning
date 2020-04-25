@@ -124,7 +124,6 @@ to check-completion
 end
 
 ;;this will detail how a robot chooses one of six weighted values in a scenario
-;;UNFINISHED
 to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
@@ -146,13 +145,13 @@ to choose-action
       turn-up
     ]
     action = 1 [
-      turn-down
+      turn-right
     ]
     action = 2 [
-      turn-left
+      turn-down
     ]
     action = 3 [
-      turn-right
+      turn-left
     ])
   ifelse [pcolor] of patch-ahead 1 = blue [
       set turned-towards-obstacle 1
@@ -274,7 +273,6 @@ end
 
 ;;this will add or subtract weight to/from the completed action
 ;;depending on its calculated value
-;;UNFINISHED
 to update-table
   let reward action-reward
 
@@ -321,7 +319,7 @@ end
 ;;Q-learning algorithm
 ;;UNFINISHED
 to-report action-reward
-  let total-reward 0 ;;calculated by adding rewards and subtractingpenalties
+  let total-reward 0 ;;calculated by adding rewards and subtracting penalties
   let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
   let explore-reward 0 ;;whether or not the robot is moving into new territory
   let spread-reward 0 ;;whether or not the robot is moving away from other robots
@@ -357,8 +355,6 @@ to-report action-reward
     set dist-to-goal dist
     set total-reward toward-goal-reward - obstacle-penalty
   ]
-
-  ;; TODO calculate a weighted combination of the smaller reward values.
 
   report total-reward
 end
