@@ -18,7 +18,7 @@ to setup
   set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
   set times (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
-
+  set filename "test"
 
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
   ;; where 0 <= STATE < 81, 0 <= ACTION < 4
@@ -182,7 +182,7 @@ end
 ;;this will calculate a value for how unexplored the robot's immediate area is
 to-report exploration-value
   let value 0
-  if [pcolor] of patch-ahead 1 != green [ ;;patch directly ahead
+  if [pcolor] of patch-ahead 1 != gree [ ;;patch directly ahead
     set value (value + 1)
   ]
   if [pcolor] of patch-right-and-ahead 90 1 != green [ ;;patch directly to right
