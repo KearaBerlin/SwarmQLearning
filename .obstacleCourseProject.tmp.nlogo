@@ -1,4 +1,438 @@
+globals [number-of-robots
+         goal goal-found
+         learning-rate exploration-rate discount-rate
+         q-table
+         times
+         filename] ;; the name of a file you want to create to record the times output in
+turtles-own [start-state action end-state
+             dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
+             turned-towards-obstacle ;;used when calculating reward
+]
 
+;;this will reset the model and set up the robots
+to setup
+  clear-all
+  set number-of-robots 5
+  set learning-rate 0.5
+  set exploration-rate 1
+  set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
+  set times (list)
+  set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
+  set filename "test"
+
+  ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
+  ;; where 0 <= STATE < 81, 0 <= ACTION < 4
+  set q-table n-values 81 [n-values 4 [0]]
+
+  start-round
+end
+
+to start-round
+  ;; these lines DO NOT clear globals or plots.
+  clear-ticks
+  clear-turtles
+  clear-patches
+  clear-drawing
+  set goal-found 0
+
+  create-turtles 5 [set start-state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
+  create-obstacles
+  create-goal ;; tries to create goal until it successfully creates one
+
+  ;;have turtles set up their initial distance to the goal
+  ask turtles [set dist-to-goal distance goal]
+
+  ;; check with DFS that a path to goal exists
+  let obstacles-exist dfs ;; dfs reports 0 (failure) or 1 (success)
+  while [obstacles-exist = 0] [
+    create-obstacles
+    create-goal
+    set obstacles-exist dfs
+    show obstacles-exist
+  ]
+
+  reset-ticks
+end
+
+to go ;;basic stand-in for go procedure
+  check-completion ; check whether the round is over
+
+  ask turtles [set start-state sense-state]
+  ask turtles [choose-action]
+  ask turtles [move]
+  ask turtles [mark-as-explored]
+  ask turtles [set end-state sense-state]
+  ask turtles [update-table]
+  ;ask turtles [show spread-value]
+  ;ask turtles [show exploration-value]
+  tick
+end
+
+to create-obstacles
+  clear-obstacles
+  repeat 100 [ ;;will generate obstacles quasi-randomly
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+    let obstacle patch x y
+    if (x < -2 or y < -2 or x > 2 or y > 2) and (obstacle != goal) [
+      ask obstacle [spawn-obstacle]
+    ]
+  ]
+end
+
+to clear-obstacles
+  ask patches [
+    if pcolor = blue [ set pcolor black ]
+  ]
+end
+
+;;this will turn a patch yellow if it isn't an obstacle patch
+;;further work will need to be done to minimize the chance of
+;;the goal spawning in a blank space in the center of an obstacle
+to create-goal
+  ask goal [ set pcolor black ]
+
+  let done 0
+  while [ done = 0 ] [
+    let x random 32
+    let y random 32
+    set x (x - 16)
+    set y (y - 16)
+
+    let p patch x y
+    if ([pcolor] of p != blue) and (p != patch 0 0)  [
+      ask p [set pcolor yellow]
+      set goal p
+      set done 1
+    ]
+  ]
+
+end
+
+to check-completion
+  if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
+    set times lput ticks times
+    ;show times
+    ;; TODO not sure this is the right kind of equation we want, but it should decrease it more when learning-rate is larger
+    set exploration-rate (exploration-rate - 0.001 * exploration-rate)
+    show exploration-rate
+    start-round
+  ]
+;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
+;  if percent-at-goal >= 0.75 [
+;    set times lput ticks times
+;    show times
+;    start-round
+;  ]
+end
+
+;;this will detail how a robot chooses one of six weighted values in a scenario
+to choose-action
+  ;; decide whether to explore or exploit the table
+  let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
+  if rand > exploration-rate [
+    ;; exploit q-table to decide which action to take
+    let state-number state-to-number start-state
+    let row item state-number q-table
+    ;; find which index holds the max value in row
+    let max-reward max row
+    set action position max-reward row
+  ]
+  if rand <= exploration-rate [
+    ;; randomly explore
+    set action (random 4)
+  ]
+  ;; either way, now we execute the appropriate turn
+  (ifelse
+      action = 0 [
+      turn-up
+    ]
+    action = 1 [
+      turn-right
+    ]
+    action = 2 [
+      turn-down
+    ]
+    action = 3 [
+      turn-left
+    ])
+  ifelse [pcolor] of patch-ahead 1 = blue [
+      set turned-towards-obstacle 1
+  ]
+  [
+    set turned-towards-obstacle 0
+  ]
+end
+
+to-report sense-state
+  ;; sense the four squares around myself: [ahead, right, behind, left]
+  let sensor-output (list)
+  let angle 0
+  while [angle < 360] [
+    let p patch-right-and-ahead angle 1
+    let colour [pcolor] of p
+    set sensor-output lput colour sensor-output
+    set angle angle + 90
+  ]
+  report sensor-output
+end
+
+;;this will calculate a value for how unexplored the robot's immediate area is
+to-report exploration-value
+  let value 0
+  if [pcolor] of patch-ahead 1 = black [ ;;patch directly ahead
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 90 1 = black [ ;;patch directly to right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 45 1 != gree [ ;;patch diagonal up right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
+    set value (value + 1)
+  ]
+  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
+    set value (value + 1)
+  ]
+  report value
+end
+
+to-report spread-value
+  let id 0
+  let value 0
+  repeat number-of-robots [
+    let x-diff (([xcor] of turtle id) - xcor)
+    let y-diff (([ycor] of turtle id) - ycor)
+    if x-diff < 0 [
+      set x-diff (x-diff * -1)
+    ]
+    if y-diff < 0 [
+      set y-diff (y-diff * -1)
+    ]
+    set x-diff round (x-diff / 10)
+    set y-diff round (y-diff / 10)
+    set value (value + x-diff + y-diff)
+    set id id + 1
+  ]
+  report value
+end
+
+;;below are the six basic actions a robot can take
+to turn-towards [object]
+  face object
+end
+
+to turn-from [object]
+  face object
+  set heading (heading - 180)
+end
+
+to turn-up
+  set heading 90
+end
+
+to turn-down
+  set heading 270
+end
+
+to turn-left
+  set heading 180
+end
+
+to turn-right
+  set heading 0
+end
+
+;;the robots can move after turning in a direction
+;;they will not move forward if there is an obstacle in front of them
+;;this may later make use of a boolean value
+;;the robots will disappear if they enter the goal
+to move
+  if [pcolor] of patch-ahead 1 != blue [
+    fd 1
+  ]
+  if pcolor = yellow [
+    if goal-found = 0 [
+      set goal-found 1
+    ]
+    die
+  ]
+end
+
+;;this keeps track of the territory covered by the robots
+to mark-as-explored
+  set pcolor green
+end
+
+;;this will add or subtract weight to/from the completed action
+;;depending on its calculated value
+to update-table
+  let reward action-reward
+
+  let start-state-number state-to-number start-state
+  let row item start-state-number q-table
+  let old-q-value item action row
+
+  ;;calculate "next" state given action we took.
+  let end-state-number state-to-number end-state
+
+  ;; get the max of the row that corresponds to the "next state" ie current state after taking action
+  let estimated-max-future-reward (max item end-state-number q-table)
+
+  ;; calculate new q-value
+  let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+
+  ;; place it in the table
+  let old-row item start-state-number q-table
+  let new-row replace-item action old-row new-q-value
+  set q-table replace-item start-state-number q-table new-row
+
+end
+
+;; given a state [a b c d] returns a distinct, stable number between 0 and 80 inclusive
+to-report state-to-number [state-list]
+  let shifted-list (list)
+  ; convert the state-list into a list of numbers between 0 and 2
+  foreach state-list [ x -> set shifted-list lput (color-to-number x) shifted-list ]
+  let a item 0 shifted-list
+  let b item 1 shifted-list
+  let c item 2 shifted-list
+  let d item 3 shifted-list
+  report a * 1 + b * 3 + c * 9 + d * 27
+end
+
+to-report color-to-number [x]
+  if x = black [report 0]
+  if x = green [report 1]
+  if x = blue [report 2]
+  report 0 ;; TODO don't we also need yellow? then we have more states...?
+end
+
+;;this will calculate the value of an action the robot just took through the
+;;Q-learning algorithm
+to-report action-reward
+  let total-reward 0 ;;calculated by adding rewards and subtracting penalties
+  let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
+  let explore-reward 0 ;;whether or not the robot is moving into new territory
+  let spread-reward 0 ;;whether or not the robot is moving away from other robots
+  let obstacle-penalty 0 ;;used if the robot chooses to face towards an obstacle
+
+  if turned-towards-obstacle = 1 [
+    set obstacle-penalty 100
+  ]
+
+  ;;exploration and spreading out is prioritized when the goal has not been found
+  ifelse goal-found = 0 [
+    ;other methods determine the exploration and spread values
+    set explore-reward exploration-value / 6
+    set spread-reward spread-value
+    ;;calculate the reward
+    set total-reward (exploration-value + spread-value - obstacle-penalty)
+  ]
+
+  ;;moving towards the goal is prioritized when the goal has been found
+  [
+    ; calculate whether the distance to goal changed
+    let prev-dist dist-to-goal
+    let dist distance goal
+    if dist > prev-dist [
+      set toward-goal-reward -1 ; TODO not sure whether these are actually the values we want.
+    ]
+    if dist = prev-dist [
+      set toward-goal-reward 0
+    ]
+    if dist < prev-dist [
+      set toward-goal-reward 5
+    ]
+    set dist-to-goal dist
+
+    set total-reward (toward-goal-reward - obstacle-penalty)
+  ]
+
+  report total-reward
+end
+
+;;this will generate blue squares at a point on the map
+;;each blue patch will be treated like a wall, so they will act as obstacles
+;;the generator tries to make sure that the areas around it are clear so that
+;;the robots will always have a path to traverse
+to spawn-obstacle
+  let obstacle-size random 6 ;;how many squares around the center point will be turned blue
+  set obstacle-size (obstacle-size + 2) ;;minimum of 2, maximum of 7
+  let x-difference random 2 ;;these will help the patch look around it at other squares
+  let y-difference random 2 ;;they're random so the patches are generated in random directions
+  set x-difference (x-difference - 1) ;;minimum of -1, maximum of 1
+  set y-difference (y-difference - 1)
+  set pcolor blue ;;the center patch will make itself blue
+  repeat obstacle-size [
+    repeat 3 [
+      repeat 3 [
+        if x-difference != 0 or y-difference != 0 [ ;;making sure its not checking itself
+          ;;the following if-statement checks if the area around a certain patch is clear
+          if [pcolor] of patch (pxcor + (x-difference * 2)) (pycor + (y-difference * 2)) != blue
+          and [pcolor] of patch (pxcor + x-difference) (pycor + y-difference) != blue [
+            ;;if the area is clear, turn the patch blue
+            ask patch (pxcor + x-difference) (pycor + y-difference) [set pcolor blue]
+            ;;change the coordinates to refer to a different patch
+            ifelse x-difference = 1
+              [set x-difference -1]
+              [set x-difference (x-difference + 1)]
+          ]
+          ifelse y-difference = 1
+            [set y-difference -1]
+            [set y-difference (y-difference + 1)]
+        ]
+      ]
+    ]
+  ]
+end
+
+to-report dfs
+  ; G is the graph, s is the starting node, g is the goal node
+  let visited (list)
+  let stack (list)   ; to be used as a stack
+  ; Add g to visited
+  set visited lput goal visited
+  set stack lput goal stack
+
+  while [not empty? stack] [
+    ; pop the last element
+    let len length stack
+    let current last stack
+    set stack remove-item (len - 1) stack
+
+    if current = patch 0 0 [ report 1 ]
+
+    ; generate neighbors of current, as an agentset
+    let neighbor-set turtles ;; this is just a bogus value to initialize the agentset
+    ask current [ set neighbor-set neighbors4 ] ;; 4 neighbors of current patch
+    ; NOTE: neighbor-set includes obstacles. we must check in the following loop that the neighbor
+    ; is not an obstacle before actually visiting it.
+
+    ask neighbor-set [ ;; ask each neighbor patch to do the following:
+      ;; here, self refers to the element of neighbor-set we are currently processing
+      if (not member? self visited) and (pcolor != blue) [
+        set visited lput self visited
+        set stack lput self stack
+      ]
+    ]
+
+  ]
+  report 0
+
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
