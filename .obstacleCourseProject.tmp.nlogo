@@ -1,10 +1,4 @@
 
-
-to output
-  file-open filename
-  file-write times
-  file-close
-end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -27,8 +21,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-1
-1
+0
+0
 1
 ticks
 30.0
