@@ -188,22 +188,22 @@ to-report exploration-value
   if [pcolor] of patch-right-and-ahead 90 1 = black [ ;;patch directly to right
     set value (value + 1)
   ]
-  if [pcolor] of patch-right-and-ahead 45 1 != gree [ ;;patch diagonal up right
+  if [pcolor] of patch-right-and-ahead 45 1 = black [ ;;patch diagonal up right
     set value (value + 1)
   ]
-  if [pcolor] of patch-left-and-ahead 90 1 != green [ ;;patch directly to left
+  if [pcolor] of patch-left-and-ahead 90 1 = black [ ;;patch directly to left
     set value (value + 1)
   ]
-  if [pcolor] of patch-left-and-ahead 45 1 != green [ ;;patch diagonal up left
+  if [pcolor] of patch-left-and-ahead 45 1 = black [ ;;patch diagonal up left
     set value (value + 1)
   ]
-  if [pcolor] of patch-right-and-ahead 135 1 != green [ ;;patch diagonal down right
+  if [pcolor] of patch-right-and-ahead 135 1 = black [ ;;patch diagonal down right
     set value (value + 1)
   ]
-  if [pcolor] of patch-left-and-ahead 135 1 != green [ ;;patch diagnoal down left
+  if [pcolor] of patch-left-and-ahead 135 1 = black [ ;;patch diagnoal down left
     set value (value + 1)
   ]
-  if [pcolor] of patch-left-and-ahead 180 1 != green [ ;;patch directly behind
+  if [pcolor] of patch-left-and-ahead 180 1 = black [ ;;patch directly behind
     set value (value + 1)
   ]
   report value
