@@ -12,6 +12,7 @@ turtles-own [start-state action end-state
 ;;this will reset the model and set up the robots
 to setup
   clear-all
+  set test-mode false
   set number-of-robots 5
   set learning-rate 0.5
   set exploration-rate 1
@@ -36,7 +37,8 @@ to start-round
   set goal-found 0
 
   create-turtles 5 [set start-state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
-  create-obstacles
+
+create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
 
   ;;have turtles set up their initial distance to the goal
@@ -142,7 +144,7 @@ end
 to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
-  if rand > exploration-rate [
+  if rand > exploration-rate or test-mode [
     ;; exploit q-table to decide which action to take
     let state-number state-to-number start-state
     let row item state-number q-table
@@ -150,23 +152,23 @@ to choose-action
     let max-reward max row
     set action position max-reward row
   ]
-  if rand <= exploration-rate [
+  if rand <= exploration-rate and not test-mode [
     ;; randomly explore
     set action (random 4)
   ]
   ;; either way, now we execute the appropriate turn
   (ifelse
       action = 0 [
-      turn-up
+      right 0
     ]
     action = 1 [
-      turn-right
+      right 90
     ]
     action = 2 [
-      turn-down
+      right 180
     ]
     action = 3 [
-      turn-left
+      right 270
     ])
   ifelse [pcolor] of patch-ahead 1 = blue [
       set turned-towards-obstacle 1
@@ -219,26 +221,6 @@ to-report exploration-value
   report value
 end
 
-to-report spread-value
-  let id 0
-  let value 0
-  repeat number-of-robots [
-    let x-diff (([xcor] of turtle id) - xcor)
-    let y-diff (([ycor] of turtle id) - ycor)
-    if x-diff < 0 [
-      set x-diff (x-diff * -1)
-    ]
-    if y-diff < 0 [
-      set y-diff (y-diff * -1)
-    ]
-    set x-diff round (x-diff / 10)
-    set y-diff round (y-diff / 10)
-    set value (value + x-diff + y-diff)
-    set id id + 1
-  ]
-  report value
-end
-
 ;;below are the six basic actions a robot can take
 to turn-towards [object]
   face object
@@ -249,21 +231,21 @@ to turn-from [object]
   set heading (heading - 180)
 end
 
-to turn-up
-  set heading 90
-end
-
-to turn-down
-  set heading 270
-end
-
-to turn-left
-  set heading 180
-end
-
-to turn-right
-  set heading 0
-end
+;to turn-up
+;  set heading 90
+;end
+;
+;to turn-down
+;  set heading 270
+;end
+;
+;to turn-left
+;  set heading 180
+;end
+;
+;to turn-right
+;  set heading 0
+;end
 
 ;;the robots can move after turning in a direction
 ;;they will not move forward if there is an obstacle in front of them
@@ -336,7 +318,6 @@ to-report action-reward
   let total-reward 0 ;;calculated by adding rewards and subtracting penalties
   let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
   let explore-reward 0 ;;whether or not the robot is moving into new territory
-
   let obstacle-penalty 0 ;;used if the robot chooses to face towards an obstacle
 
   if turned-towards-obstacle = 1 [
@@ -344,33 +325,31 @@ to-report action-reward
   ]
 
   ;;exploration and spreading out is prioritized when the goal has not been found
-  ifelse goal-found = 0 [
+;  ifelse goal-found = 0 [
     ;other methods determine the exploration and spread values
-    set explore-reward exploration-value / 6
-    set spread-reward spread-value
+    set explore-reward exploration-value
     ;;calculate the reward
-    set total-reward (exploration-value + spread-value - obstacle-penalty)
-  ]
+    set total-reward (exploration-value - obstacle-penalty)
+;  ]
 
   ;;moving towards the goal is prioritized when the goal has been found
-  [
-    ; calculate whether the distance to goal changed
-    let prev-dist dist-to-goal
-    let dist distance goal
-    if dist > prev-dist [
-      set toward-goal-reward -1 ; TODO not sure whether these are actually the values we want.
-    ]
-    if dist = prev-dist [
-      set toward-goal-reward 0
-    ]
-    if dist < prev-dist [
-      set toward-goal-reward 5
-    ]
-    set dist-to-goal dist
-
-    set total-reward (toward-goal-reward - obstacle-penalty)
-  ]
-
+;  [
+;    ; calculate whether the distance to goal changed
+;    let prev-dist dist-to-goal
+;    let dist distance goal
+;    if dist > prev-dist [
+;      set toward-goal-reward -1 ; TODO not sure whether these are actually the values we want.
+;    ]
+;    if dist = prev-dist [
+;      set toward-goal-reward 0
+;    ]
+;    if dist < prev-dist [
+;      set toward-goal-reward 5
+;    ]
+;    set dist-to-goal dist
+;
+;    set total-reward (toward-goal-reward - obstacle-penalty)
+;  ]
   report total-reward
 end
 
@@ -451,7 +430,10 @@ to output
 
   let filename_table (word filename "_table")
   file-open filename_table
-  file-write q-table
+  foreach q-table [
+    x -> file-write x
+    file-type "\n"
+  ]
   file-close
 end
 @#$#@#$#@
@@ -532,6 +514,17 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+16
+162
+128
+195
+test-mode
+test-mode
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
