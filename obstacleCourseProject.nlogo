@@ -116,7 +116,17 @@ to check-completion
     set times lput ticks times
     ;show times
     ;; TODO not sure this is the right kind of equation we want, but it should decrease it more when learning-rate is larger
-    set exploration-rate (exploration-rate - 0.001 * exploration-rate)
+    let decrease 0.05
+    if exploration-rate < 0.6 and exploration-rate > 0.3 [
+      set decrease 0.01
+    ]
+    if exploration-rate <= 0.3 [
+      set decrease 0.005
+    ]
+    if exploration-rate < 0.01 [
+      set decrease 0
+    ]
+    set exploration-rate (exploration-rate - decrease)
     show exploration-rate
     start-round
   ]
@@ -437,6 +447,11 @@ end
 to output
   file-open filename
   file-write times
+  file-close
+
+  let filename_table (word filename "_table")
+  file-open filename_table
+  file-write q-table
   file-close
 end
 @#$#@#$#@
