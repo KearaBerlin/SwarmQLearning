@@ -7,8 +7,11 @@ globals [number-of-robots
 turtles-own [start-state action end-state
              dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
              turned-towards-obstacle ;;used when calculating reward
+             turned-towards-black
              moved-onto-black
              black-square-count
+             toward-black-x
+             toward-black-y
 ]
 
 ;;this will reset the model and set up the robots
@@ -39,6 +42,8 @@ to start-round
   set goal-found 0
 
   create-turtles 5 [set start-state (n-values 4 [black])
+                    set toward-black-x 10
+                    set toward-black-y 10
                     set heading 0] ;initialize state to a length 4 list of the color black
   create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
@@ -180,6 +185,7 @@ to choose-action
   [
     set turned-towards-obstacle 0
   ]
+
 end
 
 to-report sense-state
@@ -192,22 +198,25 @@ to-report sense-state
     set sensor-output lput colour sensor-output
     set angle angle + 90
   ]
-  ;; TODO get which direction is the robot that sees the most black squares
+  ;; get which direction is the robot that sees the most black squares
   let shortest-distance 100
   let best-x 200
   let best-y 200
   ask other turtles [
-    if pxcor != [pxcor] of myself and pycor != [pycor] of myself [
-      let dist distance myself
-      if black-square-count > 0 and dist < shortest-distance [
-        set shortest-distance dist
-        set best-x pxcor
-        set best-y pycor
-      ]
+    let dist distance myself
+    if black-square-count > 0 and dist < shortest-distance [
+      set shortest-distance dist
+      set best-x pxcor
+      set best-y pycor
     ]
   ]
   ;; figure out which direction to go in
-  set angle towards (patch best-x best-y) - heading
+  set angle 0
+  if best-x != 200 and patch pxcor pycor != patch best-x best-y [
+    set angle towards (patch best-x best-y) - heading
+    set toward-black-x best-x
+    set toward-black-y best-y
+  ]
   let dir 0
   if (315 < angle and angle <= 359) or (0 <= angle and angle <= 45) [
     set dir 0
@@ -287,6 +296,7 @@ end
 ;;the robots will disappear if they enter the goal
 to move
   set moved-onto-black false
+  set turned-towarda-black false
   if [pcolor] of patch-ahead 1 != blue [
     fd 1
   ]
@@ -298,6 +308,12 @@ to move
       set goal-found 1
     ]
     die
+  ]
+  let patch-toward-black patch toward-black-x toward-black-y
+  if patch pxcor pycor != patch-toward-black [
+    if heading = (towards patch-toward-black) [
+      set turned-toward-black true
+    ]
   ]
 end
 
@@ -338,12 +354,12 @@ end
 to-report state-to-number [state-list]
   let shifted-list (list)
   ; convert the state-list into a list of numbers between 0 and 2
-  foreach state-list [ x -> set shifted-list lput (color-to-number x) shifted-list ]
-  let a item 0 shifted-list
-  let b item 1 shifted-list
-  let c item 2 shifted-list
-  let d item 3 shifted-list
-  report a * 1 + b * 3 + c * 9 + d * 27
+  let a color-to-number (item 0 state-list)
+  let b color-to-number (item 1 state-list)
+  let c color-to-number (item 2 state-list)
+  let d color-to-number (item 3 state-list)
+  let f item 4 state-list
+  report a * 1 + b * 3 + c * 9 + d * 27 + f * 81
 end
 
 to-report color-to-number [x]
@@ -360,6 +376,7 @@ to-report action-reward
   let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
   let explore-reward 0 ;;whether or not the robot is moving into new territory
   let black-square-reward 0 ;; whether the robot moved onto a black square
+  let move-to-black-squares-reward 0  ;; whether the robot moved toward other black squares when it didn't see any black squares near itself
   let obstacle-penalty 0 ;;used if the robot chooses to face towards an obstacle
 
   if turned-towards-obstacle = 1 [
@@ -374,11 +391,11 @@ to-report action-reward
       set black-square-reward 10
     ]
     ;; determine whether to reward for moving toward other robot's black squares
-    if black-square-count = 0 [
-      ;; TODO
+    if black-square-count = 0 and turned-toward-black [
+      set move-to-black-squares-reward 2
     ]
     ;;calculate the reward
-    set total-reward (exploration-value + black-square-reward - obstacle-penalty)
+    set total-reward (exploration-value + black-square-reward + move-to-black-squares-reward - obstacle-penalty)
 ;  ]
 
   ;;moving towards the goal is prioritized when the goal has been found
