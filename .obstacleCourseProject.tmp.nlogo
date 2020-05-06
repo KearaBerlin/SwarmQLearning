@@ -36,9 +36,9 @@ to start-round
   clear-drawing
   set goal-found 0
 
-  create-turtles 5 [set start-state (n-values 4 [black])
-                    set heading 0] ;initialize state to a length 4 list of the color black
-  create-obstacles
+  create-turtles 5 [set start-state (n-values 4 [black]) ] ;initialize state to a length 4 list of the color black
+
+create-obstacles
   create-goal ;; tries to create goal until it successfully creates one
 
   ;;have turtles set up their initial distance to the goal
