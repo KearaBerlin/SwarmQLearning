@@ -14,7 +14,7 @@ to setup
   clear-all
   set test-mode false
   set number-of-robots 5
-  set learning-rate 0.5
+  set learning-rate 1
   set exploration-rate 1
   set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
   set times (list)
@@ -125,10 +125,11 @@ to check-completion
     if exploration-rate <= 0.3 [
       set decrease 0.005
     ]
-    if exploration-rate < 0.01 [
+    if exploration-rate < 0.05 [
       set decrease 0
     ]
     set exploration-rate (exploration-rate - decrease)
+    set learning-rate (learning-rate - decrease)
     show exploration-rate
     start-round
   ]
@@ -271,20 +272,23 @@ end
 ;;this will add or subtract weight to/from the completed action
 ;;depending on its calculated value
 to update-table
+
   let reward action-reward
 
   let start-state-number state-to-number start-state
   let row item start-state-number q-table
   let old-q-value item action row
+  ; show (word "old" old-q-value)
 
-  ;;calculate "next" state given action we took.
   let end-state-number state-to-number end-state
 
   ;; get the max of the row that corresponds to the "next state" ie current state after taking action
   let estimated-max-future-reward (max item end-state-number q-table)
+  ; show (word "future" estimated-max-future-reward)
 
   ;; calculate new q-value
   let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
+  ; show (word "new" new-q-value)
 
   ;; place it in the table
   let old-row item start-state-number q-table
