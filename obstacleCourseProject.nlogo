@@ -7,6 +7,7 @@ globals [number-of-robots
 turtles-own [start-state action end-state
              dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
              turned-towards-obstacle ;;used when calculating reward
+             moved-onto-black
 ]
 
 ;;this will reset the model and set up the robots
@@ -253,8 +254,12 @@ end
 ;;this may later make use of a boolean value
 ;;the robots will disappear if they enter the goal
 to move
+  set moved-onto-black false
   if [pcolor] of patch-ahead 1 != blue [
     fd 1
+  ]
+  if pcolor = black [
+    set moved-onto-black true
   ]
   if pcolor = yellow [
     if goal-found = 0 [
@@ -322,6 +327,7 @@ to-report action-reward
   let total-reward 0 ;;calculated by adding rewards and subtracting penalties
   let toward-goal-reward 0 ;;whether or not the robot has moved towards the goal
   let explore-reward 0 ;;whether or not the robot is moving into new territory
+  let black-square-reward 0 ;; whether the robot moved onto a black square
   let obstacle-penalty 0 ;;used if the robot chooses to face towards an obstacle
 
   if turned-towards-obstacle = 1 [
@@ -331,9 +337,12 @@ to-report action-reward
   ;;exploration and spreading out is prioritized when the goal has not been found
 ;  ifelse goal-found = 0 [
     ;other methods determine the exploration and spread values
-    set explore-reward exploration-value
+    ;set explore-reward exploration-value
+    if moved-onto-black [
+      set black-square-reward 10
+    ]
     ;;calculate the reward
-    set total-reward (exploration-value - obstacle-penalty)
+    set total-reward (exploration-value + black-square-reward - obstacle-penalty)
 ;  ]
 
   ;;moving towards the goal is prioritized when the goal has been found
@@ -526,7 +535,7 @@ SWITCH
 195
 test-mode
 test-mode
-1
+0
 1
 -1000
 
