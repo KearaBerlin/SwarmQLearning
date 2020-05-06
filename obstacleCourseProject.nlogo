@@ -8,6 +8,7 @@ turtles-own [start-state action end-state
              dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
              turned-towards-obstacle ;;used when calculating reward
              moved-onto-black
+             black-square-count
 ]
 
 ;;this will reset the model and set up the robots
@@ -23,8 +24,8 @@ to setup
   set filename "test"
 
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
-  ;; where 0 <= STATE < 81, 0 <= ACTION < 4
-  set q-table n-values 81 [n-values 4 [0]]
+  ;; where 0 <= STATE < 324, 0 <= ACTION < 4
+  set q-table n-values 324 [n-values 4 [0]]
 
   start-round
 end
@@ -61,6 +62,7 @@ to go ;;basic stand-in for go procedure
   check-completion ; check whether the round is over
 
   ask turtles [set start-state sense-state]
+  ask turtles [set black-square-count exploration-value]
   ask turtles [choose-action]
   ask turtles [move]
   ask turtles [mark-as-explored]
@@ -190,7 +192,37 @@ to-report sense-state
     set sensor-output lput colour sensor-output
     set angle angle + 90
   ]
-  report sensor-output
+  ;; TODO get which direction is the robot that sees the most black squares
+  let shortest-distance 100
+  let best-x 200
+  let best-y 200
+  ask other turtles [
+    if pxcor != [pxcor] of myself and pycor != [pycor] of myself [
+      let dist distance myself
+      if black-square-count > 0 and dist < shortest-distance [
+        set shortest-distance dist
+        set best-x pxcor
+        set best-y pycor
+      ]
+    ]
+  ]
+  ;; figure out which direction to go in
+  set angle towards (patch best-x best-y) - heading
+  let dir 0
+  if (315 < angle and angle <= 359) or (0 <= angle and angle <= 45) [
+    set dir 0
+  ]
+  if 45 < angle and angle <= 135 [
+    set dir 1
+  ]
+  if 135 < angle and angle <= 225 [
+    set dir 2
+  ]
+  if 225 < angle and angle <= 315 [
+    set dir 3
+  ]
+  let state lput dir sensor-output
+  report state
 end
 
 ;;this will calculate a value for how unexplored the robot's immediate area is
@@ -340,6 +372,10 @@ to-report action-reward
     ;set explore-reward exploration-value
     if moved-onto-black [
       set black-square-reward 10
+    ]
+    ;; determine whether to reward for moving toward other robot's black squares
+    if black-square-count = 0 [
+      ;; TODO
     ]
     ;;calculate the reward
     set total-reward (exploration-value + black-square-reward - obstacle-penalty)
@@ -535,7 +571,7 @@ SWITCH
 195
 test-mode
 test-mode
-0
+1
 1
 -1000
 
