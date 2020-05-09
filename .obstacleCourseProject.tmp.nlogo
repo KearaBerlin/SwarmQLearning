@@ -3,6 +3,8 @@ globals [number-of-robots
          learning-rate exploration-rate discount-rate
          q-table
          times
+         random-times exploit-times random-unexplored exploit-unexplored
+         testing random-policy exploit ; whether or not currently running the test suite, and whether using random or learned behavior
          filename] ;; the name of a file you want to create to record the times output in
 turtles-own [start-state action end-state
              dist-to-goal  ;;this turtle's current distance to goal (for calculating reward)
@@ -23,8 +25,16 @@ to setup
   set exploration-rate 1
   set discount-rate 0.5 ;; the amount that we care about long-term expected reward over short-term reward
   set times (list)
+  set random-times (list)
+  set exploit-times (list)
+  set random-unexplored (list)
+  set exploit-unexplored (list)
   set goal patch 0 0 ;; dummy value just to make sure there is a value in goal to start
   set filename "test"
+  set testing false
+  set random-policy false
+  set exploit false
+  set learn true
 
   ;; initialize q-table to all zeros; should be accessed item STATE (item ACTION q-table)
   ;; where 0 <= STATE < 324, 0 <= ACTION < 4
@@ -72,10 +82,71 @@ to go ;;basic stand-in for go procedure
   ask turtles [move]
   ask turtles [mark-as-explored]
   ask turtles [set end-state sense-state]
-  ask turtles [update-table]
+  if not testing and learn [
+    ask turtles [update-table]
+  ]
   ;ask turtles [show spread-value]
   ;ask turtles [show exploration-value]
   tick
+end
+
+to test
+  set testing true
+
+  repeat 50 [
+    ; random
+    set random-policy true
+    start-round
+    while [goal-found = 0] [
+      go
+    ]
+    record
+    reset-robots
+    set random-policy false
+
+    ; exploit
+    set exploit true
+    while [goal-found = 0] [
+      go
+    ]
+    record
+    set exploit false
+  ]
+
+  set testing false
+  output-test-data
+end
+
+to record
+    ;; record information while running the test suite
+    if random-policy [
+      set random-times lput ticks random-times
+      set random-unexplored lput count patches with [pcolor = black] random-unexplored
+    ]
+    if exploit [
+      set exploit-times lput ticks exploit-times
+      set exploit-unexplored lput count patches with [pcolor = black] exploit-unexplored
+    ]
+end
+
+;; runs only certain lines of start-round, for when we want to keep the map
+to reset-robots
+  clear-ticks
+  clear-turtles
+  clear-exploration
+  set goal-found 0
+  create-turtles 5 [set start-state (n-values 4 [black])
+                    set toward-black-x 10
+                    set toward-black-y 10
+                    set heading 0] ;initialize state to a length 4 list of the color black
+  ask turtles [set dist-to-goal distance goal]
+  reset-ticks
+end
+
+to clear-exploration
+  ask patches [
+    if pcolor = green [ set pcolor black ]
+  ]
 end
 
 to create-obstacles
@@ -123,9 +194,7 @@ end
 
 to check-completion
   if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
-    set times lput ticks times
-    ;show times
-    ;; TODO not sure this is the right kind of equation we want, but it should decrease it more when learning-rate is larger
+    ;; this decreases exploration-rate more when it is larger
     let decrease 0.05
     if exploration-rate < 0.6 and exploration-rate > 0.3 [
       set decrease 0.01
@@ -136,10 +205,14 @@ to check-completion
     if exploration-rate < 0.05 [
       set decrease 0
     ]
-    set exploration-rate (exploration-rate - decrease)
-    set learning-rate (learning-rate - decrease)
-    show exploration-rate
-    start-round
+
+    if not testing [
+      set times lput ticks times
+      set exploration-rate (exploration-rate - decrease)
+      set learning-rate (learning-rate - decrease)
+      show exploration-rate
+      start-round
+    ]
   ]
 ;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
 ;  if percent-at-goal >= 0.75 [
@@ -149,22 +222,23 @@ to check-completion
 ;  ]
 end
 
-;;this will detail how a robot chooses one of six weighted values in a scenario
+;;this details how a robot chooses one of the possible actions to take
 to choose-action
   ;; decide whether to explore or exploit the table
   let rand random-float 1 ;; between 0 (inclusive) and 1 (exclusive)
   if rand > exploration-rate or test-mode [
-    ;; exploit q-table to decide which action to take
-    let state-number state-to-number start-state
-    let row item state-number q-table
-    ;; find which index holds the max value in row
-    let max-reward max row
-    set action position max-reward row
+    set action exploit-table start-state
   ]
   if rand <= exploration-rate and not test-mode [
     ;; randomly explore
     set action (random 4)
   ]
+
+  ;; for running the test suite
+  if testing and random-policy [
+    set action (random 4)
+  ]
+
   ;; either way, now we execute the appropriate turn
   (ifelse
       action = 0 [
@@ -185,7 +259,15 @@ to choose-action
   [
     set turned-towards-obstacle 0
   ]
+end
 
+to-report exploit-table [state]
+  ;; exploit q-table to decide which action to take
+    let state-number state-to-number state
+    let row item state-number q-table
+    ;; find which index holds the max value in row
+    let max-reward max row
+    report position max-reward row
 end
 
 to-report sense-state
@@ -296,7 +378,7 @@ end
 ;;the robots will disappear if they enter the goal
 to move
   set moved-onto-black false
-  set turned-towarda-black false
+  set turned-towards-black false
   if [pcolor] of patch-ahead 1 != blue [
     fd 1
   ]
@@ -312,7 +394,7 @@ to move
   let patch-toward-black patch toward-black-x toward-black-y
   if patch pxcor pycor != patch-toward-black [
     if heading = (towards patch-toward-black) [
-      set turned-toward-black true
+      set turned-towards-black true
     ]
   ]
 end
@@ -391,7 +473,7 @@ to-report action-reward
       set black-square-reward 10
     ]
     ;; determine whether to reward for moving toward other robot's black squares
-    if black-square-count = 0 and turned-toward-black [
+    if black-square-count = 0 and turned-towards-black [
       set move-to-black-squares-reward 2
     ]
     ;;calculate the reward
@@ -502,6 +584,33 @@ to output
   ]
   file-close
 end
+
+to output-test-data
+  let f (word filename "_randomtimes")
+  file-open f
+  file-write random-times
+  file-type "\n"
+  file-close
+
+  set f (word filename "_exploittimes")
+  file-open f
+  file-write exploit-times
+  file-type "\n"
+  file-close
+
+  set f (word filename "_randomunexplored")
+  file-open f
+  file-write random-unexplored
+  file-type "\n"
+  file-close
+
+  set f (word filename "_exploitunexplored")
+  file-open f
+  file-write exploit-unexplored
+  file-type "\n"
+  file-close
+
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -591,6 +700,51 @@ test-mode
 1
 1
 -1000
+
+BUTTON
+15
+210
+78
+243
+NIL
+test
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+19
+262
+122
+295
+learn
+learn
+1
+1
+-1000
+
+BUTTON
+18
+310
+113
+343
+NIL
+start-round
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
