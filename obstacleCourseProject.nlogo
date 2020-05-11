@@ -51,7 +51,7 @@ to start-round
   clear-drawing
   set goal-found 0
 
-  create-turtles 5 [set start-state (n-values 4 [black])
+  create-turtles number-of-robots [set start-state (n-values 4 [black])
                     set toward-black-x 10
                     set toward-black-y 10
                     set heading 0] ;initialize state to a length 4 list of the color black
@@ -85,8 +85,6 @@ to go ;;basic stand-in for go procedure
   if not testing and learn [
     ask turtles [update-table]
   ]
-  ;ask turtles [show spread-value]
-  ;ask turtles [show exploration-value]
   tick
 end
 
@@ -135,7 +133,7 @@ to reset-robots
   clear-turtles
   clear-exploration
   set goal-found 0
-  create-turtles 5 [set start-state (n-values 4 [black])
+  create-turtles number-of-robots [set start-state (n-values 4 [black])
                     set toward-black-x 10
                     set toward-black-y 10
                     set heading 0] ;initialize state to a length 4 list of the color black
@@ -170,8 +168,6 @@ to clear-obstacles
 end
 
 ;;this will turn a patch yellow if it isn't an obstacle patch
-;;further work will need to be done to minimize the chance of
-;;the goal spawning in a blank space in the center of an obstacle
 to create-goal
   ask goal [ set pcolor black ]
 
@@ -193,8 +189,7 @@ to create-goal
 end
 
 to check-completion
-  if (number-of-robots > count turtles) [ ;;temporarily, just one robot hits the goal
-    ;; this decreases exploration-rate more when it is larger
+  if (number-of-robots > count turtles) [
     let decrease 0.05
     if exploration-rate < 0.6 and exploration-rate > 0.3 [
       set decrease 0.01
@@ -214,12 +209,6 @@ to check-completion
       start-round
     ]
   ]
-;  let percent-at-goal ((number-of-robots - count turtles) /  number-of-robots)
-;  if percent-at-goal >= 0.75 [
-;    set times lput ticks times
-;    show times
-;    start-round
-;  ]
 end
 
 ;;this details how a robot chooses one of the possible actions to take
@@ -346,36 +335,9 @@ to-report exploration-value
   report value
 end
 
-;;below are the six basic actions a robot can take
-to turn-towards [object]
-  face object
-end
-
-to turn-from [object]
-  face object
-  set heading (heading - 180)
-end
-
-;to turn-up
-;  set heading 90
-;end
-;
-;to turn-down
-;  set heading 270
-;end
-;
-;to turn-left
-;  set heading 180
-;end
-;
-;to turn-right
-;  set heading 0
-;end
-
 ;;the robots can move after turning in a direction
 ;;they will not move forward if there is an obstacle in front of them
-;;this may later make use of a boolean value
-;;the robots will disappear if they enter the goal
+;;the robots will disappear if they enter the goal, or are next to the goal
 to move
   set moved-onto-black false
   set turned-towards-black false
@@ -385,7 +347,7 @@ to move
   if pcolor = black [
     set moved-onto-black true
   ]
-  if pcolor = yellow [
+  if pcolor = yellow or near-goal [
     if goal-found = 0 [
       set goal-found 1
     ]
@@ -399,13 +361,29 @@ to move
   ]
 end
 
+to-report near-goal
+  if [pcolor] of patch-right-and-ahead 0 1 = yellow [
+    report true
+  ]
+  if [pcolor] of patch-right-and-ahead 90 1 = yellow [
+    report true
+  ]
+  if [pcolor] of patch-right-and-ahead 180 1 = yellow [
+    report true
+  ]
+  if [pcolor] of patch-right-and-ahead 270 1 = yellow [
+    report true
+  ]
+  report false
+end
+
 ;;this keeps track of the territory covered by the robots
 to mark-as-explored
   set pcolor green
 end
 
-;;this will add or subtract weight to/from the completed action
-;;depending on its calculated value
+;;this will add or subtract weight to/from the entry for the completed action in the Q-table
+;;depending on its calculated reward value
 to update-table
 
   let reward action-reward
@@ -413,17 +391,14 @@ to update-table
   let start-state-number state-to-number start-state
   let row item start-state-number q-table
   let old-q-value item action row
-  ; show (word "old" old-q-value)
 
   let end-state-number state-to-number end-state
 
   ;; get the max of the row that corresponds to the "next state" ie current state after taking action
   let estimated-max-future-reward (max item end-state-number q-table)
-  ; show (word "future" estimated-max-future-reward)
 
   ;; calculate new q-value
   let new-q-value (1 - learning-rate) * old-q-value + learning-rate * (reward + discount-rate * estimated-max-future-reward)
-  ; show (word "new" new-q-value)
 
   ;; place it in the table
   let old-row item start-state-number q-table
@@ -432,10 +407,9 @@ to update-table
 
 end
 
-;; given a state [a b c d] returns a distinct, stable number between 0 and 80 inclusive
+;; given a state [a b c d] returns a distinct, stable number between 0 and 323 inclusive
 to-report state-to-number [state-list]
   let shifted-list (list)
-  ; convert the state-list into a list of numbers between 0 and 2
   let a color-to-number (item 0 state-list)
   let b color-to-number (item 1 state-list)
   let c color-to-number (item 2 state-list)
@@ -448,7 +422,7 @@ to-report color-to-number [x]
   if x = black [report 0]
   if x = green [report 1]
   if x = blue [report 2]
-  report 0 ;; TODO don't we also need yellow? then we have more states...?
+  report 0
 end
 
 ;;this will calculate the value of an action the robot just took through the
@@ -486,7 +460,7 @@ to-report action-reward
 ;    let prev-dist dist-to-goal
 ;    let dist distance goal
 ;    if dist > prev-dist [
-;      set toward-goal-reward -1 ; TODO not sure whether these are actually the values we want.
+;      set toward-goal-reward -1
 ;    ]
 ;    if dist = prev-dist [
 ;      set toward-goal-reward 0
@@ -725,7 +699,7 @@ SWITCH
 295
 learn
 learn
-1
+0
 1
 -1000
 
@@ -749,39 +723,31 @@ NIL
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This is a simulation of a robot swarm which explores its environment in search of a randomly generated goal. At first, the swarm explores randomly. A simple Q-learning algorithm is implemented in this model to allow the swarm to be trained to explore more effectively. 
 
-## HOW IT WORKS
+The robots mark a square green when they move over it, and can sense whether a square is green or black. Robots can also communicate to one another whether there is unexplored space nearby. The Q-learning reward function rewards robots for moving onto unexplored spaces, for moving toward unexplored areas reported by other robots if they don't themselves see unexplored space, and for not running into obstacles.
 
-(what rules the agents use to create the overall behavior of the model)
+When learning is enabled, the current learning rate is printed out in the console. It decreases during the learning process automatically to a minimum of 0.05.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+To reset the simulation and generate a new randomly generated environment with obstacles and a goal, use the "setup" button. 
 
-## THINGS TO NOTICE
+To start the simulation, use the "go" button, which repeatedly has the robot swarm explore, calulating and storing rewards for each action a robot takes according to the Q-learning algorithm. When one of the robots finds the goal, a new environment will be generated automatically, the swarm will be reset to the center of the screen, and exploration and learning automatically continues. 
 
-(suggested things for the user to notice while running the model)
+To create a file with a printout of the current Q-table and a list of the number of ticks taken to find the goal in each trial so far, use the "output" button.
 
-## THINGS TO TRY
+To stop the robots from learning and to make all of their actions be decided according to the Q-table instead of possibly being randomly decided, turn on test-mode. This will not reset anything, just temporarily change the robot's behavior so you can more easily see what they have learned to do so far.
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+Similarly, you can turn off or on learning without changing or resetting anything else using the "learn" switch.
 
-## EXTENDING THE MODEL
+To run a test suite of 50 randomly generated environments, use the "test" button. This runs the swarm twice on each environment, once randomly and once with the learned policy, and prints the number of ticks each trial took to a file. It also prints the number of unexplored spaces at the end of each trial to a file.
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+Finally, use the "start-round" button to generate a new random environment and reset the robots without resetting the Q-table or anything else in the simulation.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Created by Keara Berlin and Linnea Prehn for the AI Robotics capstone course at Macalester College, under the guidance of Prof. Susan Fox, Spring 2020.
 @#$#@#$#@
 default
 true
